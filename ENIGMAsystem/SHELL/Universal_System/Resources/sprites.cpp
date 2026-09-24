@@ -147,7 +147,7 @@ int sprite_add(std::string filename, int imgnumb, bool precise, bool transparent
 }
 
 int sprite_add(std::string filename, int imgnumb, bool transparent, bool smooth, int x_offset, int y_offset, bool mipmap) {
-  return sprite_add(filename, imgnumb, false, transparent, smooth, false, x_offset, y_offset, mipmap);
+  return sprite_add(filename, imgnumb, true, transparent, smooth, false, x_offset, y_offset, mipmap);
 }
 
 bool sprite_replace(int ind, std::string filename, int imgnumb, bool precise, bool transparent, bool smooth, bool preload,
@@ -158,7 +158,7 @@ bool sprite_replace(int ind, std::string filename, int imgnumb, bool precise, bo
 
 bool sprite_replace(int ind, std::string filename, int imgnumb, bool transparent, bool smooth, int x_offset, int y_offset,
                     bool free_texture, bool mipmap) {
-  return sprite_replace(ind, filename, imgnumb, false, transparent, smooth, false, x_offset, y_offset, free_texture, mipmap);
+  return sprite_replace(ind, filename, imgnumb, true, transparent, smooth, false, x_offset, y_offset, free_texture, mipmap);
 }
 
 bool sprite_exists(int spr) {
