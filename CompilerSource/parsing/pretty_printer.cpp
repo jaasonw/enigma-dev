@@ -483,7 +483,11 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
     }
     print("return ");
   }
-  VISIT_AND_CHECK(node.function);
+  // A called name is a function or script, never a variable to lower.
+  if (node.function->type == AST::NodeType::IDENTIFIER)
+    print(std::string(node.function->As<AST::IdentifierAccess>()->name.content));
+  else
+    VISIT_AND_CHECK(node.function);
   print("(");
 
   bool is_variadic = false;
