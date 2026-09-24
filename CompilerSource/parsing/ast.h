@@ -581,6 +581,8 @@ class AST {
     // Use @c std::size_t as vector addresses are not stable thus pointers can cause bugs
     std::unordered_map<ConstValue::HardwareValue, std::size_t> cases;
     std::optional<std::size_t> default_branch = std::nullopt;
+    // GML: cases compare with == in order and may be any expression.
+    bool lower_gml_switch = false;
 
     BASIC_NODE_ROUTINES(SwitchStatement);
   };
