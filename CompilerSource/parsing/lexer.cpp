@@ -585,10 +585,28 @@ bool Lexer::HandleMacro(std::string_view name) {
   return true;
 }
 
+// C++ words that are plain names in GML: they print as gml_<word>.
+static const std::map<std::string_view, std::string_view, std::less<>> kCppOnlyWords {
+  {"alignas", "gml_alignas"}, {"asm", "gml_asm"}, {"class", "gml_class"},
+  {"concept", "gml_concept"}, {"co_return", "gml_co_return"}, {"co_yield", "gml_co_yield"},
+  {"explicit", "gml_explicit"}, {"export", "gml_export"}, {"friend", "gml_friend"},
+  {"goto", "gml_goto"}, {"namespace", "gml_namespace"}, {"private", "gml_private"},
+  {"protected", "gml_protected"}, {"public", "gml_public"}, {"register", "gml_register"},
+  {"requires", "gml_requires"}, {"static_assert", "gml_static_assert"}, {"struct", "gml_struct"},
+  {"template", "gml_template"}, {"this", "gml_this"}, {"throw", "gml_throw"},
+  {"typeid", "gml_typeid"}, {"union", "gml_union"}, {"using", "gml_using"},
+  {"virtual", "gml_virtual"},
+};
 Token &Lexer::TranslateNameToken(Token &token) {
   std::string_view name = token.content;
 
-  // TODO(new parser): C++ keyword conflict handling deleted from here
+  if (context->compatibility_opts.use_gml_equals) {
+    if (auto w = kCppOnlyWords.find(name); w != kCppOnlyWords.end()) {
+      token.content = std::string(w->second);
+      token.type = TT_IDENTIFIER;
+      return token;
+    }
+  }
 
   if (auto kw = keyword_lookup.find(name); kw != keyword_lookup.end()) {
     token.type = kw->second;
