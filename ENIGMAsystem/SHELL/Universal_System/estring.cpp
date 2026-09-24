@@ -232,13 +232,10 @@ char string_byte_at(string str, int index) {
   return str[n];
 }
 
-char string_char_at(string str,int index) {
+string string_char_at(string str,int index) {
   unsigned int n = index <= 1 ? 0 : (unsigned int)(index - 1);
-  #ifdef DEBUG_MODE
-    if (n > str.length())
-      DEBUG_MESSAGE("Index " + toString(index) + " is outside range " + toString(str.length()) + " in the following string:\n\"" + str + "\".", MESSAGE_TYPE::M_ERROR);
-  #endif
-  return str[n];
+  if (n >= str.length()) return "";
+  return string(1, str[n]);
 }
 
 string string_delete(string str,int index,int count) {
