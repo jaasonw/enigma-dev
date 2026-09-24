@@ -4576,6 +4576,23 @@ TEST(ParserTest, GmlEqualsLowering) {
   EXPECT_THAT(v2.GetPrintedCode(), Not(HasSubstr("==")));
 }
 
+// GML precedence: & | ^ bind tighter than comparisons; && || ^^ share one
+// level, left to right. The printer parenthesizes so C++ keeps that grouping.
+TEST(ParserTest, GmlOperatorPrecedence) {
+  ParserTester test = ParserTester::CreateWithoutCpp(
+      "r = a & b != c; s = a || b && c; t = a == b < c;");
+  auto node = test->ParseCode();
+  ASSERT_NE(node, nullptr);
+  SemanticAnnotator annotator(&test.herr, test.context->language_fe);
+  node->RecurusiveVisit(annotator);
+  AST::CppPrettyPrinter v;
+  ASSERT_TRUE(v.VisitCode(*node->As<AST::CodeBlock>()));
+  std::string out = v.GetPrintedCode();
+  EXPECT_THAT(out, HasSubstr("r = (a & b) != c"));
+  EXPECT_THAT(out, HasSubstr("s = (a || b) && c"));
+  EXPECT_THAT(out, HasSubstr("t = (a == b) < c"));
+}
+
 // EDL's / is real division: the annotator marks it and the printer coerces
 // the divisor, so 1/4 emits 0.25's worth of arithmetic instead of C++'s 0.
 // Unannotated trees print verbatim (round-trip fidelity).

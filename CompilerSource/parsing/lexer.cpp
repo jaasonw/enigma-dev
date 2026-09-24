@@ -201,6 +201,7 @@ static const setting::CompatibilityOptions kCppCompatibility {
   .use_cpp_literals = true,
   .use_cpp_escapes = true,
   .use_gml_equals = false,
+  .use_gml_precedence = false,
   .keyword_blacklist = "",
 };
 
