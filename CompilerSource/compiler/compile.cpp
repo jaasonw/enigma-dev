@@ -197,6 +197,13 @@ DLLEXPORT void ide_handles_game_launch() { run_game = false; }
 static bool redirect_make = true;
 DLLEXPORT void log_make_to_console() { redirect_make = false; }
 
+static bool is_identifier(const string &name) {
+  if (name.empty() || isdigit((unsigned char) name[0])) return false;
+  for (char c : name)
+    if (!isalnum((unsigned char) c) && c != '_') return false;
+  return true;
+}
+
 template<typename T> void write_resource_meta(ofstream &wto, const char *kind, vector<T> resources, bool gen_names = true) {
   int max = 0;
   stringstream swb;  // switch body
@@ -204,7 +211,9 @@ template<typename T> void write_resource_meta(ofstream &wto, const char *kind, v
          "  enum {  // " << kind << " names\n\n";
   for (const T &res : resources) {
     if (res.id() >= max) max = res.id() + 1;
-    wto << "    " << res.name << " = " << res.id() << ",\n";
+    // GM allows names code can't refer to (spaces); they get no enum entry.
+    if (is_identifier(res.name))
+      wto << "    " << res.name << " = " << res.id() << ",\n";
     swb << "      case " << res.id() << ": return \""  << res.name << "\";\n";
   }
   wto << "  };\n\n";
