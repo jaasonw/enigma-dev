@@ -92,6 +92,7 @@ std::vector<std::function<void()> > extension_draw_gui_after_hooks;
 
 unsigned gui_width = 0;
 unsigned gui_height = 0;
+bool gui_size_set = false;
 
 particles_implementation* particles_impl;
 void set_particles_implementation(particles_implementation* part_impl)
@@ -261,6 +262,7 @@ namespace enigma_user {
 void display_set_gui_size(unsigned int width, unsigned int height) {
   enigma::gui_width = width;
   enigma::gui_height = height;
+  enigma::gui_size_set = true;
 }
 
 unsigned int display_get_gui_width(){
@@ -395,6 +397,10 @@ void screen_redraw()
   // Now process the sub event of draw called draw gui
   // It is for drawing GUI elements without view scaling and transformation
   screen_set_viewport(0, 0, window_get_region_width(), window_get_region_height());
+  if (!enigma::gui_size_set) {
+    enigma::gui_width = window_get_region_width();
+    enigma::gui_height = window_get_region_height();
+  }
   d3d_set_projection_ortho(0, 0, enigma::gui_width, enigma::gui_height, 0);
 
   if (enigma::gui_used)
