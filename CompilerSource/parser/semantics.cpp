@@ -152,11 +152,8 @@ void SemanticAnnotator::record_locals(AST::DeclarationStatement &node) {
 void SemanticAnnotator::classify_access(AST::ScopeAccess &node) {
   using AccessKind = AST::ScopeAccess::AccessKind;
   if (!node.lhs) return;  // `::name` global-scope id: not a dot access.
-  if (node.lhs->type != AST::NodeType::IDENTIFIER) {
-    node.access_kind = AccessKind::VARACCESS;
-    return;
-  }
-  const std::string &left = node.lhs->As<AST::IdentifierAccess>()->name.content;
+  const std::string left = node.lhs->type == AST::NodeType::IDENTIFIER
+      ? node.lhs->As<AST::IdentifierAccess>()->name.content : "";
   if (left == "global") {
     node.access_kind = AccessKind::GLOBAL;
   } else if (left == "local") {
