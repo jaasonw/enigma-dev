@@ -146,14 +146,15 @@ namespace enigma
         }
       }
 
-      unsigned char* bigtex = new unsigned char[w*h]();
+      unsigned char* bigtex = new unsigned char[w*h*4]();
       for (unsigned i = 0; i < gcount; i++)
       {
         fontglyph& fg = fgr.glyphs[i];
         // Copy the SpriteFont glyph image into the big texture we just allocated
         for (int yy = 0; yy < glyphmetrics[i].h; yy++) {
           for (int xx = 0; xx < glyphmetrics[i].w; xx++) {
-            bigtex[w*(glyphmetrics[i].y + yy) + glyphmetrics[i].x + xx] = (glyphdata[i])[gtw*(glyphy[i] + yy) + xx + glyphx[i]];
+            for (int channel = 0; channel < 4; ++channel)
+            bigtex[4*(w*(glyphmetrics[i].y + yy) + glyphmetrics[i].x + xx) + channel] = (glyphdata[i])[4*(gtw*(glyphy[i] + yy) + xx + glyphx[i]) + channel];
           }
         }
         delete[] glyphdata[i]; // Delete the image data we just copied
