@@ -54,6 +54,11 @@ bool SemanticAnnotator::VisitCodeBlock(AST::CodeBlock &node) {
   return true;
 }
 
+bool SemanticAnnotator::VisitSwitchStatement(AST::SwitchStatement &node) {
+  node.lower_gml_switch = gml_equals_;
+  return true;
+}
+
 bool SemanticAnnotator::VisitIfStatement(AST::IfStatement &node) {
   mark_statement(node.true_branch);
   mark_statement(node.false_branch);

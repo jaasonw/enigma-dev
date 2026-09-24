@@ -47,6 +47,7 @@ class SemanticAnnotator : public AST::Visitor {
   // places GML's = assigns (see mark_statement).
   bool VisitCodeBlock(AST::CodeBlock &node) final;
   bool VisitIfStatement(AST::IfStatement &node) final;
+  bool VisitSwitchStatement(AST::SwitchStatement &node) final;
   bool VisitForLoop(AST::ForLoop &node) final;
   bool VisitWhileLoop(AST::WhileLoop &node) final;
   bool VisitDoLoop(AST::DoLoop &node) final;

@@ -845,6 +845,33 @@ bool AST::CppPrettyPrinter::VisitDefaultStatement(AST::DefaultStatement &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitSwitchStatement(AST::SwitchStatement &node) {
+  if (node.lower_gml_switch) {
+    // Pick the first matching case by ==, then switch on its index so
+    // fallthrough and break keep their meaning.
+    print("{ const variant enigma_switch_value = (");
+    VISIT_AND_CHECK(node.expression);
+    print("); switch (");
+    int index = 0;
+    for (auto &stmt : node.body->statements) {
+      if (stmt->type != AST::NodeType::CASE) continue;
+      print("enigma_switch_value == (");
+      VISIT_AND_CHECK(stmt->As<AST::CaseStatement>()->value);
+      print(") ? " + std::to_string(++index) + " : ");
+    }
+    print("0) { ");
+    index = 0;
+    for (auto &stmt : node.body->statements) {
+      if (stmt->type == AST::NodeType::CASE) {
+        print("case " + std::to_string(++index) + ": ");
+        if (!VisitCodeBlock(*stmt->As<AST::CaseStatement>()->statements)) return false;
+        print(" ");
+      } else {
+        VISIT_AND_CHECK(stmt);
+      }
+    }
+    print("} }");
+    return true;
+  }
   print("switch(int(");
   VISIT_AND_CHECK(node.expression);
   print(")) ");
