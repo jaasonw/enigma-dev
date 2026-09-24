@@ -413,7 +413,11 @@ void screen_redraw()
   draw_batch_flush(batch_flush_deferred);
 
   if (sprite_exists(cursor_sprite)) {
-    draw_sprite(cursor_sprite, 0, mouse_x, mouse_y);
+    draw_sprite(cursor_sprite, 0,
+      (window_mouse_get_x() - (window_get_width() - window_get_region_width_scaled()) / 2.0)
+        * enigma::gui_width / window_get_region_width_scaled(),
+      (window_mouse_get_y() - (window_get_height() - window_get_region_height_scaled()) / 2.0)
+        * enigma::gui_height / window_get_region_height_scaled());
     // cursor sprite needs its own flush before this frame ends
     draw_batch_flush(batch_flush_deferred);
   }
