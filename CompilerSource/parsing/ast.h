@@ -811,6 +811,7 @@ class AST {
     // the emitted function, so the script lowering must leave them alone
     // (`var` names shadow instance variables, and GML hoists them).
     std::set<std::string, std::less<>> declared_names_;
+    std::set<std::string, std::less<>> hoisted_vars_;
     // Set while printing a declarator: its identifiers are declared names,
     // never value reads, regardless of what the lowering knows about them.
     bool in_declarator_ = false;
@@ -821,6 +822,8 @@ class AST {
     CppPrettyPrinter(std::ofstream &ofs, const LanguageFrontend *lfe, bool is_script);
     // Pre-pass: collect declared names from the tree about to be printed.
     void CollectDeclaredNames(Node &root);
+    // GML `var` is scoped to the whole event or script: declare every one up front.
+    void HoistVarDeclarations(Node &root);
     void print(std::string code);
     void PrintSemiColon(PNode &node);
     std::string GetPrintedCode();
