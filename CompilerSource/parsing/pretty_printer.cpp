@@ -79,7 +79,7 @@ struct DeclaredNameCollector : AST::Visitor {
   std::set<std::string, std::less<>> *out;
   explicit DeclaredNameCollector(std::set<std::string, std::less<>> *out): out(out) {}
   bool VisitDeclarationStatement(AST::DeclarationStatement &node) final {
-    if (node.clause) {
+    if (node.clause && node.storage_class != AST::DeclarationStatement::StorageClass::GLOBAL) {
       for (auto &d : node.clause->declarators)
         if (!d->name.content.empty()) out->insert(std::string(d->name.content));
     }
@@ -133,6 +133,10 @@ bool AST::CppPrettyPrinter::VisitIdentifierAccess(AST::IdentifierAccess &node) {
   std::string name = node.name.content;
   if (in_declarator_ || declared_names_.count(name)) {
     print(name);
+    return true;
+  }
+  if (node.globalvar) {
+    print("enigma::varaccess_" + name + "(int(global))");
     return true;
   }
   if (is_script && name != "self") {
