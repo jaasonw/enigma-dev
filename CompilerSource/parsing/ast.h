@@ -212,6 +212,21 @@ class AST {
     BASIC_NODE_ROUTINES(FunctionCallExpression);
 
     FunctionCallExpression(PNode function_, std::vector<PNode> &&arguments_): function{std::move(function_)}, arguments{std::move(arguments_)} {}
+
+    /// For variable_local_exists, variable_global_exists and
+    /// variable_global_set called with a literal name: the function and the
+    /// variable name. GML resolves these at runtime; EDL lowers them.
+    std::optional<std::pair<std::string, std::string>> VariableNameCall() const {
+      if (function->type != NodeType::IDENTIFIER || arguments.empty() ||
+          arguments[0]->type != NodeType::LITERAL)
+        return std::nullopt;
+      std::string fn(static_cast<const IdentifierAccess &>(*function).name.content);
+      if (fn != "variable_local_exists" && fn != "variable_global_exists" && fn != "variable_global_set")
+        return std::nullopt;
+      const auto &lit = static_cast<const Literal &>(*arguments[0]).value;
+      if (lit.type != TT_STRINGLIT) return std::nullopt;
+      return std::make_pair(fn, std::get<std::string>(lit.value));
+    }
   };
 
   // Unary prefix expressions; generally top-level will be "++varname"
