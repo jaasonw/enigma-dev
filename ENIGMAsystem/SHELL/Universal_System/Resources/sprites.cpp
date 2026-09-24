@@ -77,11 +77,13 @@ int sprite_get_height(int sprid) {
 
 gs_scalar sprite_get_texture_width_factor(int sprid, int subimg) {
   const auto& spr2d = sprites.get(sprid);
+  if (!spr2d.SubimageCount()) return 0;
   return spr2d.GetTextureRect(spr2d.ModSubimage(subimg)).w;
 }
 
 gs_scalar sprite_get_texture_height_factor(int sprid, int subimg) {
   const auto& spr2d = sprites.get(sprid);
+  if (!spr2d.SubimageCount()) return 0;
   return spr2d.GetTextureRect(spr2d.ModSubimage(subimg)).h;
 }
 
@@ -131,6 +133,7 @@ int sprite_get_number(int sprid) {
 
 int sprite_get_texture(int sprid, int subimage) {
   const auto& spr2d = sprites.get(sprid);
+  if (!spr2d.SubimageCount()) return -1;
   return spr2d.GetTexture(spr2d.ModSubimage(subimage));
 }
 
