@@ -287,6 +287,10 @@ class DeclGatheringVisitor : public AST::Visitor {
   }
 
   bool VisitFunctionCallExpression(AST::FunctionCallExpression &node) {
+    if (auto call = node.VariableNameCall(); call && !lang->is_shared_local(call->second)) {
+      if (call->first == "variable_local_exists") parsed_scope->locals[call->second] = dectrip("var");
+      cs->add_dot_accessed_local(call->second);
+    }
     AddFunction(node);
     if (node.function->type != AST::NodeType::IDENTIFIER) node.function->RecurusiveVisit(*this);
     for (auto &arg : node.arguments) arg->RecurusiveVisit(*this);

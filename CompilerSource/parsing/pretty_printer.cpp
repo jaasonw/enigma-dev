@@ -486,6 +486,21 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpression &node) {
+  if (auto call = node.VariableNameCall()) {
+    const auto &[fn, name] = *call;
+    const bool builtin = language_fe && language_fe->is_shared_local(name);
+    const std::string owner = fn == "variable_local_exists" ? "self" : "global";
+    if (fn == "variable_global_set") {
+      print("(enigma::varaccess_" + name + "(int(global)) = ");
+      if (node.arguments.size() > 1) VISIT_AND_CHECK(node.arguments[1]);
+      print(")");
+    } else if (builtin && owner == "self") {
+      print("true");
+    } else {
+      print("!enigma_user::is_undefined(enigma::varaccess_" + name + "(int(" + owner + ")))");
+    }
+    return true;
+  }
   const bool ordered = node.evaluate_in_order;
   if (ordered) {
     print("[&]() -> decltype(auto) { ");
