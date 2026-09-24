@@ -406,7 +406,20 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     VISIT_AND_CHECK(node.left);
     print("; return ");
   }
+  auto is_string_literal = [](const PNode &n) {
+    return n->type == AST::NodeType::LITERAL &&
+           static_cast<const AST::Literal &>(*n).value.type == TT_STRINGLIT;
+  };
+  // "a" + "b" would add two C++ pointers; make the left one a string.
+  const bool string_sum = node.operation.type == TT_PLUS &&
+                          is_string_literal(node.left) && is_string_literal(node.right);
   auto visit_operand = [&](PNode &operand, bool right) {
+    if (string_sum && !right) {
+      print("std::string{");
+      if (!Visit(operand)) return false;
+      print("}");
+      return true;
+    }
     if (ordered && !right) {
       print("std::forward<decltype(enigma_lhs)>(enigma_lhs)");
       return true;

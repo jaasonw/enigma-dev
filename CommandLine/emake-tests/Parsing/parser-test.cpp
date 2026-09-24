@@ -4521,6 +4521,15 @@ TEST(ParserTest, ForTrailingSemicolon) {
   EXPECT_EQ(test->current_token().type, TT_ENDOFCODE);
 }
 
+TEST(ParserTest, StringLiteralSum) {
+  ParserTester test = ParserTester::CreateWithoutCpp("s = \"a\" + 'b' + \"c\";");
+  auto node = test->ParseCode();
+  ASSERT_NE(node, nullptr);
+  AST::CppPrettyPrinter v;
+  ASSERT_TRUE(v.VisitCode(*node->As<AST::CodeBlock>()));
+  EXPECT_THAT(v.GetPrintedCode(), HasSubstr("std::string{\"a\"} + \"b\" + \"c\""));
+}
+
 TEST(ParserTest, GmlDoUntil) {
   ParserTester test = ParserTester::CreateWithoutCpp("do x += 1 until (x > 3)");
   auto node = test->ParseCode();
