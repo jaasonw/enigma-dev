@@ -357,7 +357,17 @@ static bool NeedsParens(const AST::BinaryExpression &parent, const AST::Node &op
 }
 
 bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
+  const bool ordered = node.evaluate_in_order;
+  if (ordered) {
+    print("[&]() -> decltype(auto) { auto&& enigma_lhs = ");
+    VISIT_AND_CHECK(node.left);
+    print("; return ");
+  }
   auto visit_operand = [&](PNode &operand, bool right) {
+    if (ordered && !right) {
+      print("std::forward<decltype(enigma_lhs)>(enigma_lhs)");
+      return true;
+    }
     const bool paren = NeedsParens(node, *operand, right);
     if (paren) print("(");
     if (!Visit(operand)) return false;
@@ -366,10 +376,11 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
   };
   if (node.operation.type == TT_XOR) {  // C++ has no logical xor
     print("(bool(");
-    VISIT_AND_CHECK(node.left);
+    if (!visit_operand(node.left, false)) return false;
     print(") != bool(");
     VISIT_AND_CHECK(node.right);
     print("))");
+    if (ordered) print("; }()");
     return true;
   }
   if (!visit_operand(node.left, false)) return false;
@@ -414,10 +425,21 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
   } else if (node.operation.type == TT_BEGINBRACKET) {
     print("]");
   }
+  if (ordered) print("; }()");
   return true;
 }
 
 bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpression &node) {
+  const bool ordered = node.evaluate_in_order;
+  if (ordered) {
+    print("[&]() -> decltype(auto) { ");
+    for (std::size_t i = 0; i < node.arguments.size(); i++) {
+      print("auto&& enigma_arg" + std::to_string(i) + " = ");
+      VISIT_AND_CHECK(node.arguments[i]);
+      print("; ");
+    }
+    print("return ");
+  }
   VISIT_AND_CHECK(node.function);
   print("(");
 
@@ -438,7 +460,12 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
       print("(enigma::varargs(),");
       varargs_opened = true;
     }
-    VISIT_AND_CHECK(node.arguments[i]);
+    if (ordered) {
+      const std::string arg = "enigma_arg" + std::to_string(i);
+      print("std::forward<decltype(" + arg + ")>(" + arg + ")");
+    } else {
+      VISIT_AND_CHECK(node.arguments[i]);
+    }
     if (i < node.arguments.size() - 1) {
       print(", ");
     }
@@ -449,6 +476,7 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
   if (varargs_opened) print(")");
 
   print(")");
+  if (ordered) print("; }()");
   return true;
 }
 
