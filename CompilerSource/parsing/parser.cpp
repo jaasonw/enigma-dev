@@ -2630,6 +2630,7 @@ std::unique_ptr<AST::ContinueStatement> ParseContinueStatement() {
 
 std::unique_ptr<AST::ReturnStatement> ParseExitStatement() {
   token = lexer->ReadToken();
+  MaybeConsumeSemicolon();
   return std::make_unique<AST::ReturnStatement>(nullptr, true);
 }
 
