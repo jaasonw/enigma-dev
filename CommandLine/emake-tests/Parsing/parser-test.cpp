@@ -4514,6 +4514,13 @@ TEST(ParserTest, ExitElse) {
   EXPECT_EQ(test->current_token().type, TT_ENDOFCODE);
 }
 
+TEST(ParserTest, ForTrailingSemicolon) {
+  ParserTester test = ParserTester::CreateWithoutCpp("for (i = 0; i < 3; i += 1;) x += i;");
+  auto node = test->ParseCode();
+  ASSERT_NE(node, nullptr);
+  EXPECT_EQ(test->current_token().type, TT_ENDOFCODE);
+}
+
 TEST(ParserTest, GmlDoUntil) {
   ParserTester test = ParserTester::CreateWithoutCpp("do x += 1 until (x > 3)");
   auto node = test->ParseCode();
