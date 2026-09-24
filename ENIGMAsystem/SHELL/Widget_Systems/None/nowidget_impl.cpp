@@ -86,6 +86,11 @@ int show_message(const string &message)
   return 0;
 }
 
+int show_message_ext(string message, string, string, string) {
+  printf("show_message_ext: %s\n", message.c_str());
+  return 0;
+}
+
 void show_info(string info, int bgcolor, int left, int top, int width, int height, bool embedGameWindow, bool showBorder, bool allowResize, bool stayOnTop, bool pauseGame, string caption) {
   printf("%s\n%s\n", caption.c_str(), info.c_str());
 }
@@ -137,3 +142,6 @@ double get_integer(string str, var def) {
 }
 
 }
+
+double show_menu(string, double def) { return def; }
+double show_menu_pos(double, double, string, double def) { return def; }
