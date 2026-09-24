@@ -31,6 +31,7 @@
 
 #include "Widget_Systems/widgets_mandatory.h"
 #include "Widget_Systems/General/WSdialogs.h"
+#include "Widget_Systems/General/WSmenus.h"
 
 #include "Universal_System/estring.h"
 #include "Platforms/General/PFwindow.h"
@@ -334,6 +335,11 @@ int show_attempt(string errortext) {
   return enigma::current_widget_engine->show_attempt(errortext);
 }
 
+int show_message_ext(string message, string but1, string but2, string but3) {
+  return enigma::current_widget_engine->show_message_ext(message, but1, but2, but3);
+}
+
+
 string get_string(string message, string def) {
   return enigma::current_widget_engine->get_string(message, def);
 }
@@ -401,3 +407,18 @@ void message_set_caption(string title) {
 }
 
 } // namespace enigma_user
+
+double show_menu(string str, double def) {
+  std::vector<string> items;
+  for (size_t start = 0, bar;; start = bar + 1) {
+    bar = str.find('|', start);
+    items.push_back(str.substr(start, bar - start));
+    if (bar == string::npos) break;
+  }
+  const int choice = enigma::current_widget_engine->show_menu(items);
+  return choice < 0 ? def : choice;
+}
+
+double show_menu_pos(double, double, string str, double def) {
+  return show_menu(str, def);
+}
