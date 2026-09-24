@@ -52,7 +52,8 @@
 #include <sys/proc_info.h>
 #include <libproc.h>
 #elif CURRENT_PLATFORM_ID == OS_LINUX
-#include <proc/readproc.h>
+#include <dirent.h>
+#include <fstream>
 #elif CURRENT_PLATFORM_ID == OS_FREEBSD
 #include <sys/user.h>
 #include <libutil.h>
@@ -195,14 +196,22 @@ static std::vector<pid_t> PidFromPpid(pid_t parentProcId) {
     }
   }
   #elif CURRENT_PLATFORM_ID == OS_LINUX
-  PROCTAB *proc = openproc(PROC_FILLSTAT);
-  while (proc_t *proc_info = readproc(proc, nullptr)) {
-    if (proc_info->ppid == parentProcId) {
-      vec.push_back(proc_info->tgid);
+  if (DIR *proc = opendir("/proc")) {
+    while (dirent *entry = readdir(proc)) {
+      const pid_t pid = atoi(entry->d_name);
+      if (pid <= 0) continue;
+      std::ifstream stat_file(string("/proc/") + entry->d_name + "/stat");
+      string stat((std::istreambuf_iterator<char>(stat_file)), std::istreambuf_iterator<char>());
+      // pid (comm) state ppid ...; comm may itself contain spaces or ')'.
+      const size_t comm_end = stat.rfind(')');
+      if (comm_end == string::npos) continue;
+      char state;
+      pid_t ppid;
+      if (sscanf(stat.c_str() + comm_end + 1, " %c %d", &state, &ppid) == 2 && ppid == parentProcId)
+        vec.push_back(pid);
     }
-    freeproc(proc_info);
+    closedir(proc);
   }
-  closeproc(proc);
   #elif CURRENT_PLATFORM_ID == OS_FREEBSD
   int cntp; if (kinfo_proc *proc_info = kinfo_getallproc(&cntp)) {
     for (int j = 0; j < cntp; j++) {
