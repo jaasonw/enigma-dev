@@ -408,6 +408,8 @@ class AST {
     // reads non-null `def` as "emit the name verbatim" rather than wrapping it
     // in an EDL variable accessor.
     jdi::definition *def = nullptr;
+    // Declared with globalvar somewhere in the game: the name is global.NAME.
+    bool globalvar = false;
     // When this IdentifierAccess is the leaf of a declarator chain, `name.content`
     // may be empty — that encodes an *abstract* declarator (no name, e.g. the
     // type in `(int*)x` or an unnamed function parameter). Consumers that read

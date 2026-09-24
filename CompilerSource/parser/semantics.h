@@ -36,10 +36,12 @@ namespace enigma::parsing {
 class SemanticAnnotator : public AST::Visitor {
  public:
   SemanticAnnotator(ErrorHandler *herr, const LanguageFrontend *frontend,
-                    bool gml_equals = true)
-      : herr_(herr), frontend_(frontend), gml_equals_(gml_equals) {}
+                    bool gml_equals = true,
+                    const std::set<std::string> *globalvars = nullptr)
+      : herr_(herr), frontend_(frontend), gml_equals_(gml_equals), globalvars_(globalvars) {}
 
   bool VisitScopeAccess(AST::ScopeAccess &node) final;
+  bool VisitIdentifierAccess(AST::IdentifierAccess &node) final;
   bool VisitBinaryExpression(AST::BinaryExpression &node) final;
   bool VisitFunctionCallExpression(AST::FunctionCallExpression &node) final;
   bool VisitDeclarationStatement(AST::DeclarationStatement &node) final;
@@ -74,6 +76,7 @@ class SemanticAnnotator : public AST::Visitor {
   // GML dialect: = compares in value position. Off under C++ inheritance
   // (CompatibilityOptions::use_gml_equals).
   bool gml_equals_;
+  const std::set<std::string> *globalvars_;
   // Statement-position = nodes; every other = is a comparison.
   std::set<const AST::Node*> statement_equals_;
   // Locals declared with a class type (definition pages) in this AST, in

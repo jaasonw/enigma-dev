@@ -80,6 +80,11 @@ bool IsOrderedOperator(TokenType op) {
 }  // namespace
 
 
+bool SemanticAnnotator::VisitIdentifierAccess(AST::IdentifierAccess &node) {
+  if (globalvars_ && globalvars_->count(std::string(node.name.content))) node.globalvar = true;
+  return true;
+}
+
 bool SemanticAnnotator::VisitScopeAccess(AST::ScopeAccess &node) {
   if (node.op.type == TT_DOT) classify_access(node);
   return true;
@@ -245,10 +250,10 @@ namespace {
 // Annotates one AST; returns 1 if the pass left errors on it. Parse-phase
 // errors abort the compile before this pass runs, so any error present
 // afterward is semantic. `where` names the code for the diagnostic.
-int annotate(ParsedCode &code, const std::string &where) {
+int annotate(ParsedCode &code, const std::string &where, const std::set<std::string> *globalvars) {
   enigma::parsing::SemanticAnnotator annotator(
       &code.ast.herr, code.ast.lexer->GetContext().language_fe,
-      code.ast.lexer->GetContext().compatibility_opts.use_gml_equals);
+      code.ast.lexer->GetContext().compatibility_opts.use_gml_equals, globalvars);
   code.ast.VisitNodes(annotator);
   if (!code.ast.HasError()) return 0;
   std::cerr << "Semantic error in " << where << ":\n"
@@ -262,26 +267,26 @@ int annotate_semantics(CompileState &state) {
   int errors = 0;
   for (parsed_object *obj : state.parsed_objects)
     for (ParsedEvent &event : obj->all_events)
-      errors += annotate(event, "object `" + obj->name + "'");
+      errors += annotate(event, "object `" + obj->name + "'", &state.globalvar_names);
   for (ParsedScript *script : state.parsed_scripts) {
-    errors += annotate(script->code, "script `" + script->name + "'");
+    errors += annotate(script->code, "script `" + script->name + "'", &state.globalvar_names);
     if (script->global_code)
-      errors += annotate(*script->global_code, "script `" + script->name + "'");
+      errors += annotate(*script->global_code, "script `" + script->name + "'", &state.globalvar_names);
   }
   for (ParsedScript *tline : state.parsed_tlines) {
-    errors += annotate(tline->code, "timeline `" + tline->name + "'");
+    errors += annotate(tline->code, "timeline `" + tline->name + "'", &state.globalvar_names);
     if (tline->global_code)
-      errors += annotate(*tline->global_code, "timeline `" + tline->name + "'");
+      errors += annotate(*tline->global_code, "timeline `" + tline->name + "'", &state.globalvar_names);
   }
   for (parsed_room *room : state.parsed_rooms) {
     if (room->creation_code)
-      errors += annotate(*room->creation_code, "room `" + room->name + "' creation code");
+      errors += annotate(*room->creation_code, "room `" + room->name + "' creation code", &state.globalvar_names);
     for (auto &[id, icc] : room->instance_create_codes)
       if (icc.code)
-        errors += annotate(*icc.code, "instance creation code in room `" + room->name + "'");
+        errors += annotate(*icc.code, "instance creation code in room `" + room->name + "'", &state.globalvar_names);
     for (auto &[id, icc] : room->instance_precreate_codes)
       if (icc.code)
-        errors += annotate(*icc.code, "instance precreation code in room `" + room->name + "'");
+        errors += annotate(*icc.code, "instance precreation code in room `" + room->name + "'", &state.globalvar_names);
   }
   return errors;
 }

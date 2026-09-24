@@ -225,7 +225,7 @@ class DeclGatheringVisitor : public AST::Visitor {
       prefix = std::regex_replace(prefix, std::regex("^ +| +$|( ) +"), "$1");
       suffix = std::regex_replace(suffix, std::regex("^ +| +$|( ) +"), "$1");
       dectrip dtrip(type, prefix, suffix);
-      if (is_global) parsed_scope->globals[name] = dtrip;
+      if (is_global) parsed_scope->globals[name] = dtrip, cs->globalvar_names.insert(name);
       if (is_local) parsed_scope->locals[name] = dtrip;
       cs->add_dot_accessed_local(name);
       parsed_scope->declarations[name] = spec_def;
