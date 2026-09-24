@@ -2528,6 +2528,8 @@ std::unique_ptr<AST::ForLoop> ParseForLoop() {
   if (token.type != TT_SEMICOLON && token.type != TT_ENDPARENTH) {
     incr = ParseExpression(Precedence::kAll);
   }
+  // GM8 accepts a trailing ; after the increment: for (i = 0; i < n; i += 1;)
+  if (is_conventional && token.type == TT_SEMICOLON) token = lexer->ReadToken();
 
   if (is_conventional) {
     require_token(TT_ENDPARENTH, "Expected closing parenthesis (')') after for-loop header");
