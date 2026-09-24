@@ -34,6 +34,13 @@ std::string shorten(tstring str);
 
 #endif
 
+namespace enigma {
+// GML text shows # as a line break and \# as a literal #, when drawn or shown
+// in a dialog (not in the string itself). Off for C++ string literals.
+extern bool gml_hash_newlines;
+std::string gml_display_text(const std::string &text);
+}
+
 namespace enigma_user {
 
 std::string base64_encode(std::string const& str);

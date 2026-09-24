@@ -82,6 +82,25 @@ static const std::string base64_chars =
              "abcdefghijklmnopqrstuvwxyz"
              "0123456789+/";
 
+namespace enigma {
+
+std::string gml_display_text(const std::string &text) {
+  if (!gml_hash_newlines || text.find('#') == std::string::npos) return text;
+  std::string out;
+  out.reserve(text.size());
+  for (size_t i = 0; i < text.size(); ++i) {
+    if (text[i] == '\\' && i + 1 < text.size() && text[i + 1] == '#') {
+      out += '#';
+      ++i;
+    } else {
+      out += text[i] == '#' ? '\n' : text[i];
+    }
+  }
+  return out;
+}
+
+}  // namespace enigma
+
 namespace enigma_user {
 
 bool is_base64(unsigned char c) {

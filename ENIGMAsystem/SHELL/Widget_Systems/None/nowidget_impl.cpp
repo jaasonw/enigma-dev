@@ -21,6 +21,7 @@ using std::string;
 #include "Widget_Systems/widgets_mandatory.h"
 #include "Universal_System/Instances/instance_system.h"
 #include "Universal_System/var4.h"
+#include "Universal_System/estring.h"
 #include <cstdlib>
 #include <cstdio>
 
@@ -82,7 +83,7 @@ namespace enigma_user {
 
 int show_message(const string &message)
 {
-  printf("show_message: %s\n", message.c_str());
+  printf("show_message: %s\n", enigma::gml_display_text(message).c_str());
   return 0;
 }
 
