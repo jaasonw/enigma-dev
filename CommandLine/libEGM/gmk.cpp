@@ -987,6 +987,8 @@ std::unique_ptr<Room> LoadRoom(Decoder &dec, int ver, const std::string& /*name*
     background->set_hspeed(dec.read4());
     background->set_vspeed(dec.read4());
     background->set_stretch(dec.readBool());
+    background->set_alpha(1);
+    background->set_color(0xFFFFFF);
   }
 
   room->set_enable_views(dec.readBool());
@@ -1039,6 +1041,10 @@ std::unique_ptr<Room> LoadRoom(Decoder &dec, int ver, const std::string& /*name*
     tile->set_depth(dec.read4());
     tile->set_id(dec.read4());
     tile->mutable_editor_settings()->set_locked(dec.readBool());
+    tile->set_xscale(1);
+    tile->set_yscale(1);
+    tile->set_alpha(1);
+    tile->set_color(0xFFFFFF);
   }
 
   dec.readBool(); // REMEMBER_WINDOW_SIZE
