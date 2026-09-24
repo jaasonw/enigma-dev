@@ -503,7 +503,9 @@ int FlattenTree(const buffers::TreeNode &root, GameData *gameData) {
       break;
     }
     case TypeCase::kBackground: {
-      ImageData data = loadImageData(root.background().image(), error);
+      // GM8 allows a background with no image (filled at runtime).
+      ImageData data = root.background().image().empty()
+          ? ImageData(0, 0, nullptr, 0) : loadImageData(root.background().image(), error);
       if (error) return -3; // background load error
       gameData->backgrounds.emplace_back(root.background(), root.name(), data);
       break;
