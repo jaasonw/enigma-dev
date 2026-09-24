@@ -288,7 +288,7 @@ bool AST::CppPrettyPrinter::VisitUnaryPostfixExpression(AST::UnaryPostfixExpress
 }
 
 bool AST::CppPrettyPrinter::VisitUnaryPrefixExpression(AST::UnaryPrefixExpression &node) {
-  print(node.operation.token);
+  print(node.operation.type == TT_NOT ? "!" : node.operation.token);
   VISIT_AND_CHECK(node.operand);
   return true;
 }
@@ -364,6 +364,14 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     if (paren) print(")");
     return true;
   };
+  if (node.operation.type == TT_XOR) {  // C++ has no logical xor
+    print("(bool(");
+    VISIT_AND_CHECK(node.left);
+    print(") != bool(");
+    VISIT_AND_CHECK(node.right);
+    print("))");
+    return true;
+  }
   if (!visit_operand(node.left, false)) return false;
 
   std::string operation = node.operation.token;
