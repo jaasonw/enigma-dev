@@ -316,46 +316,46 @@ void show_info(string info, int bgcolor, int left, int top, int width, int heigh
 }
 
 int show_message(const string &message) {
-  return enigma::current_widget_engine->show_message(message);
+  return enigma::current_widget_engine->show_message(enigma::gml_display_text(message));
 }
 
 int show_message_cancelable(string message) {
-  return enigma::current_widget_engine->show_message_cancelable(message);
+  return enigma::current_widget_engine->show_message_cancelable(enigma::gml_display_text(message));
 }
 
 bool show_question(string message) {
-  return enigma::current_widget_engine->show_question(message);
+  return enigma::current_widget_engine->show_question(enigma::gml_display_text(message));
 }
 
 int show_question_cancelable(string message) {
-  return enigma::current_widget_engine->show_question_cancelable(message);
+  return enigma::current_widget_engine->show_question_cancelable(enigma::gml_display_text(message));
 }
 
 int show_attempt(string errortext) {
-  return enigma::current_widget_engine->show_attempt(errortext);
+  return enigma::current_widget_engine->show_attempt(enigma::gml_display_text(errortext));
 }
 
 int show_message_ext(string message, string but1, string but2, string but3) {
-  return enigma::current_widget_engine->show_message_ext(message, but1, but2, but3);
+  return enigma::current_widget_engine->show_message_ext(enigma::gml_display_text(message), but1, but2, but3);
 }
 
 
 string get_string(string message, string def) {
-  return enigma::current_widget_engine->get_string(message, def);
+  return enigma::current_widget_engine->get_string(enigma::gml_display_text(message), def);
 }
 
 string get_password(string message, string def) {
-  return enigma::current_widget_engine->get_password(message, def);
+  return enigma::current_widget_engine->get_password(enigma::gml_display_text(message), def);
 }
 
 double get_integer(string message, var def) {
   double val = (strtod(def.c_str(), NULL)) ? : (double)def;
-  return enigma::current_widget_engine->get_integer(message, val);
+  return enigma::current_widget_engine->get_integer(enigma::gml_display_text(message), val);
 }
 
 double get_passcode(string message, var def) {
   double val = (strtod(def.c_str(), NULL)) ? : (double)def;
-  return enigma::current_widget_engine->get_passcode(message, val);
+  return enigma::current_widget_engine->get_passcode(enigma::gml_display_text(message), val);
 }
 
 string get_open_filename(string filter, string fname) {
