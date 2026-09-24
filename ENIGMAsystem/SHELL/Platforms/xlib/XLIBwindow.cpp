@@ -684,8 +684,22 @@ bool keyboard_check_direct(int key) {
     return 1;
   }
 
-  key = XKeysymToKeycode(enigma::x11::disp, enigma::keyrmap[key]);
-  return (keyState[key >> 3] & (1 << (key & 7)));
+  auto down = [&](KeySym sym) {
+    const KeyCode code = XKeysymToKeycode(enigma::x11::disp, sym);
+    return code && (keyState[code >> 3] & (1 << (code & 7)));
+  };
+  switch (key) {
+    case vk_shift:    return down(XK_Shift_L) || down(XK_Shift_R);
+    case vk_control:  return down(XK_Control_L) || down(XK_Control_R);
+    case vk_alt:      return down(XK_Alt_L) || down(XK_Alt_R);
+    case vk_lshift:   return down(XK_Shift_L);
+    case vk_rshift:   return down(XK_Shift_R);
+    case vk_lcontrol: return down(XK_Control_L);
+    case vk_rcontrol: return down(XK_Control_R);
+    case vk_lalt:     return down(XK_Alt_L);
+    case vk_ralt:     return down(XK_Alt_R);
+  }
+  return down(enigma::keyrmap[key]);
 }
 
 void clipboard_set_text(string text) {
