@@ -583,7 +583,7 @@ int LoadTriggers(Decoder &dec) {
   return 1;
 }
 
-int LoadConstants(Decoder &dec) {
+int LoadConstants(Decoder &dec, buffers::Game *game) {
   int ver = dec.read4();
   if (ver != 800) {
     errStream << "Unsupported GMK Constants version: " << ver << std::endl;
@@ -592,8 +592,9 @@ int LoadConstants(Decoder &dec) {
 
   int no = dec.read4();
   for (int i = 0; i < no; i++) {
-    dec.readStr(); // constant name
-    dec.readStr(); // constant value
+    buffers::Constant *constant = game->add_constants();
+    constant->set_name(dec.readStr());
+    constant->set_value(dec.readStr());
   }
   dec.skip(8); //last changed
 
@@ -1314,9 +1315,11 @@ std::unique_ptr<buffers::Project> GMKFileFormat::LoadProject(const fs::path& fNa
   Settings settings;
   if (!LoadSettings(dec, settings)) return nullptr;
 
+  auto proj = std::make_unique<buffers::Project>();
+  buffers::Game *game = proj->mutable_game();
   if (ver >= 800) {
     if (!LoadTriggers(dec)) return nullptr;
-    if (!LoadConstants(dec)) return nullptr;
+    if (!LoadConstants(dec, game)) return nullptr;
   }
 
   for (auto factory : groupFactories) {
@@ -1366,8 +1369,6 @@ std::unique_ptr<buffers::Project> GMKFileFormat::LoadProject(const fs::path& fNa
   settings_node->set_name("Game Settings");
   *settings_node->mutable_settings() = std::move(settings);
 
-  auto proj = std::make_unique<buffers::Project>();
-  buffers::Game *game = proj->mutable_game();
   game->set_allocated_root(root.release());
   // ensure all temp data files are written and the paths are set in the protos
   dec.processTempFileFutures();

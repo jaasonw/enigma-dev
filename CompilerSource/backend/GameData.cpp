@@ -532,6 +532,8 @@ int FlattenProto(const buffers::Project &proj, GameData *gameData) {
   cout << "Flattening tree." << endl;
 
   int ret = FlattenTree(proj.game().root(), gameData);
+  for (const auto &constant : proj.game().constants())
+    gameData->constants.emplace_back(std::string(constant.name()), std::string(constant.value()));
 
   if (ret)
     cout << "Transfer error, see log for details." << endl << endl;

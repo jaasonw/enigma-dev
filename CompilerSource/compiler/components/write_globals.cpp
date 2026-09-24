@@ -56,6 +56,17 @@ static string esc(std::string_view str) {
   return res;
 }
 
+// Constant values are GML; rewrite the literal forms C++ spells differently.
+static string constant_value(const string &value) {
+  const char q = value.empty() ? 0 : value.front();
+  if ((q == '"' || q == '\'') && value.size() >= 2 && value.find(q, 1) == value.size() - 1)
+    return "std::string{\"" + esc(std::string_view(value).substr(1, value.size() - 2)) + "\"}";
+  if (q == '$' && value.size() > 1 &&
+      value.find_first_not_of("0123456789abcdefABCDEF", 1) == string::npos)
+    return "0x" + value.substr(1);
+  return value;
+}
+
 int lang_CPP::compile_writeGlobals(const GameData &game,
                                    const ParsedScope* global,
                                    const DotLocalMap &dot_accessed_locals) {
@@ -81,7 +92,7 @@ int lang_CPP::compile_writeGlobals(const GameData &game,
   wto << "namespace enigma_user {" << endl;
   for (size_t i = 0; i < game.constants.size(); i++) {
     const GameData::Constant &con = game.constants[i];
-    wto << "  #define " << con.name << " (" << con.value <<")" << endl;
+    wto << "  #define " << con.name << " (" << constant_value(con.value) <<")" << endl;
   }
   wto << "}" << endl;
 
