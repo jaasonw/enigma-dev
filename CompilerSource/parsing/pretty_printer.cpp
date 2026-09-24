@@ -91,7 +91,7 @@ struct DeclaredNameCollector : AST::Visitor {
 
 void AST::CppPrettyPrinter::CollectDeclaredNames(AST::Node &root) {
   DeclaredNameCollector collector(&declared_names_);
-  root.accept(collector);
+  root.RecurusiveVisit(collector);
 }
 
 namespace {
