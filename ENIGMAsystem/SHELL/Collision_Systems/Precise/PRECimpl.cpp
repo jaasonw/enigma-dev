@@ -88,10 +88,10 @@ static bool precise_collision_single(int intersection_left, int intersection_rig
             {
 
                 //Test for single image.
-                const int bx1 = (colindex - x1);
-                const int by1 = (rowindex - y1);
-                const int px1 = (int)((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
-                const int py1 = (int)((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
+                const int bx1 = (colindex - (int)nearbyint(x1));
+                const int by1 = (rowindex - (int)nearbyint(y1));
+                const int px1 = (int)floor((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
+                const int py1 = (int)floor((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
                 const bool p1 = px1 >= 0 && py1 >= 0 && px1 < w1 && py1 < h1 && pixels1[py1*w1 + px1] != 0;
 
                 if (p1) {
@@ -135,17 +135,17 @@ static bool precise_collision_pair(int intersection_left, int intersection_right
             {
 
                 //Test for first image.
-                const int bx1 = (colindex - x1);
-                const int by1 = (rowindex - y1);
-                const int px1 = (int)((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
-                const int py1 = (int)((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
+                const int bx1 = (colindex - (int)nearbyint(x1));
+                const int by1 = (rowindex - (int)nearbyint(y1));
+                const int px1 = (int)floor((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
+                const int py1 = (int)floor((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
                 const bool p1 = px1 >= 0 && py1 >= 0 && px1 < w1 && py1 < h1 && pixels1[py1*w1 + px1] != 0;
 
                 //Test for second image.
-                const int bx2 = (colindex - x2);
-                const int by2 = (rowindex - y2);
-                const int px2 = (int)((bx2*cosa2 + by2*sina2)/xscale2 + xoffset2);
-                const int py2 = (int)((bx2*cosa90_2 + by2*sina90_2)/yscale2 + yoffset2);
+                const int bx2 = (colindex - (int)nearbyint(x2));
+                const int by2 = (rowindex - (int)nearbyint(y2));
+                const int px2 = (int)floor((bx2*cosa2 + by2*sina2)/xscale2 + xoffset2);
+                const int py2 = (int)floor((bx2*cosa90_2 + by2*sina90_2)/yscale2 + yoffset2);
                 const bool p2 = px2 >= 0 && py2 >= 0 && px2 < w2 && py2 < h2 && pixels2[py2*w2 + px2] != 0;
 
                 //Final test.
@@ -191,10 +191,10 @@ static bool precise_collision_line(int intersection_left, int intersection_right
                     continue;
                 }
                 // Test for single image.
-                const int bx1 = (gx - x1);
-                const int by1 = (gy - y1);
-                const int px1 = (int)((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
-                const int py1 = (int)((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
+                const int bx1 = (gx - (int)nearbyint(x1));
+                const int by1 = (gy - (int)nearbyint(y1));
+                const int px1 = (int)floor((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
+                const int py1 = (int)floor((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
                 const bool p1 = px1 >= 0 && py1 >= 0 && px1 < w1 && py1 < h1 && pixels1[py1*w1 + px1] != 0;
 
                 if (p1) {
@@ -214,10 +214,10 @@ static bool precise_collision_line(int intersection_left, int intersection_right
                     continue;
                 }
                 // Test for single image.
-                const int bx1 = (gx - x1);
-                const int by1 = (gy - y1);
-                const int px1 = (int)((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
-                const int py1 = (int)((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
+                const int bx1 = (gx - (int)nearbyint(x1));
+                const int by1 = (gy - (int)nearbyint(y1));
+                const int px1 = (int)floor((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
+                const int py1 = (int)floor((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
                 const bool p1 = px1 >= 0 && py1 >= 0 && px1 < w1 && py1 < h1 && pixels1[py1*w1 + px1] != 0;
 
                 if (p1) {
@@ -262,10 +262,10 @@ static bool precise_collision_ellipse(int intersection_left, int intersection_ri
                 if (px*px/rx_2 + py*py/ry_2 > 1.0) continue;
 
                 // Test for single image.
-                const int bx1 = (colindex - x1);
-                const int by1 = (rowindex - y1);
-                const int px1 = (int)((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
-                const int py1 = (int)((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
+                const int bx1 = (colindex - (int)nearbyint(x1));
+                const int by1 = (rowindex - (int)nearbyint(y1));
+                const int px1 = (int)floor((bx1*cosa1 + by1*sina1)/xscale1 + xoffset1);
+                const int py1 = (int)floor((bx1*cosa90_1 + by1*sina90_1)/yscale1 + yoffset1);
                 const bool p1 = px1 >= 0 && py1 >= 0 && px1 < w1 && py1 < h1 && pixels1[py1*w1 + px1] != 0;
 
                 if (p1) {
