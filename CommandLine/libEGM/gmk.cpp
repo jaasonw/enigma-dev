@@ -483,8 +483,10 @@ int LoadSettings(Decoder &dec, Settings& set) {
   dec.readBool(); dec.readBool(); dec.readBool();
   if (ver == 530) dec.skip(8); //unknown bytes, both 0
   if (ver > 600) {
-    // LET_F9_SCREENSHOT, TREAT_CLOSE_AS_ESCAPE
-    dec.readBool(); dec.readBool();
+    dec.readBool(); // LET_F9_SCREENSHOT
+    win->set_treat_close_as_escape(dec.readBool());
+  } else {
+    win->set_treat_close_as_escape(true);
   }
   dec.read4(); // GAME_PRIORITY
   win->set_freeze_on_lose_focus(dec.readBool());
@@ -1359,6 +1361,10 @@ std::unique_ptr<buffers::Project> GMKFileFormat::LoadProject(const fs::path& fNa
   // Handle postponed DnD conversion
   for(auto&& a : postponedActions) a.Parse();
   postponedActions.clear();
+
+  TreeNode *settings_node = root->mutable_folder()->add_children();
+  settings_node->set_name("Game Settings");
+  *settings_node->mutable_settings() = std::move(settings);
 
   auto proj = std::make_unique<buffers::Project>();
   buffers::Game *game = proj->mutable_game();

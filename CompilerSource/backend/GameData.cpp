@@ -516,7 +516,7 @@ int FlattenTree(const buffers::TreeNode &root, GameData *gameData) {
     case TypeCase::kObject:   gameData->objects.emplace_back(root.object(), root.name()); break;
     case TypeCase::kRoom:     gameData->rooms.emplace_back(root.room(), root.name()); break;
     case TypeCase::kInclude:  /*gameData->includes.emplace_back(root.include());*/ break;
-    case TypeCase::kSettings: /*gameData->settings.emplace_back(root.settings());*/ break;
+    case TypeCase::kSettings: gameData->settings.MergeFrom(root.settings()); break;
     default: cout << "- Not transferring unknown " << root.name() << endl; break;
   }
 
