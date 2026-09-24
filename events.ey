@@ -396,7 +396,7 @@ Events:
       }
     Instead: |
       // We never want to iterate draw; we let screen_redraw() handle it.
-      if (automatic_redraw) screen_redraw();
+      if (automatic_redraw) { screen_redraw(); screen_refresh(); }
 
   - ID: DrawGUI
     Name: "Draw GUI"
