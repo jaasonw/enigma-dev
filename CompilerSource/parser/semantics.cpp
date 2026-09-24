@@ -21,6 +21,65 @@
 
 namespace enigma::parsing {
 
+namespace {
+
+// Finds anything in an expression that can change state another operand
+// reads: calls (scripts touch instance and global variables), assignments,
+// increments, new/delete. In GML an = inside an operand compares.
+struct SideEffectFinder : AST::Visitor {
+  bool found = false;
+  bool Mark(bool side_effect) {
+    found = found || side_effect;
+    return !found;
+  }
+  bool VisitFunctionCallExpression(AST::FunctionCallExpression &) final { return Mark(true); }
+  bool VisitNewExpression(AST::NewExpression &) final { return Mark(true); }
+  bool VisitDeleteExpression(AST::DeleteExpression &) final { return Mark(true); }
+  bool VisitUnaryPrefixExpression(AST::UnaryPrefixExpression &node) final {
+    return Mark(node.operation.type == TT_INCREMENT || node.operation.type == TT_DECREMENT);
+  }
+  bool VisitUnaryPostfixExpression(AST::UnaryPostfixExpression &node) final {
+    return Mark(node.operation.type == TT_INCREMENT || node.operation.type == TT_DECREMENT);
+  }
+  bool VisitBinaryExpression(AST::BinaryExpression &node) final {
+    const TokenType op = node.operation.type;
+    return Mark(op == TT_ASSIGN || op == TT_ASSOP);
+  }
+};
+
+bool HasSideEffects(AST::Node &node) {
+  SideEffectFinder finder;
+  node.RecurusiveVisit(finder);
+  return finder.found;
+}
+
+// C++ leaves the order of call arguments and most operands unspecified (GCC
+// goes right to left); GML evaluates left to right. Order matters once one
+// operand has side effects and another isn't a literal.
+bool OrderMatters(const std::vector<AST::Node *> &operands) {
+  for (std::size_t i = 0; i < operands.size(); ++i) {
+    if (!HasSideEffects(*operands[i])) continue;
+    for (std::size_t j = 0; j < operands.size(); ++j)
+      if (j != i && operands[j]->type != AST::NodeType::LITERAL) return true;
+  }
+  return false;
+}
+
+bool IsOrderedOperator(TokenType op) {
+  switch (op) {
+    case TT_PLUS: case TT_MINUS: case TT_STAR: case TT_SLASH: case TT_DIV: case TT_MOD:
+    case TT_PERCENT: case TT_LSH: case TT_RSH: case TT_AMPERSAND: case TT_CARET: case TT_PIPE:
+    case TT_XOR: case TT_LESS: case TT_LESSEQUAL: case TT_GREATER: case TT_GREATEREQUAL:
+    case TT_EQUALTO: case TT_NOTEQUAL:
+      return true;
+    default:
+      return false;
+  }
+}
+
+}  // namespace
+
+
 bool SemanticAnnotator::VisitScopeAccess(AST::ScopeAccess &node) {
   if (node.op.type == TT_DOT) classify_access(node);
   return true;
@@ -36,6 +95,10 @@ bool SemanticAnnotator::VisitBinaryExpression(AST::BinaryExpression &node) {
   if (gml_equals_ && node.operation.type == TT_EQUALS &&
       !statement_equals_.count(&node)) {
     node.lower_gml_equals = true;
+  }
+  if (gml_equals_ && IsOrderedOperator(node.operation.type) &&
+      OrderMatters({node.left.get(), node.right.get()})) {
+    node.evaluate_in_order = true;
   }
   // An assignment's right-hand side is statement-like in GML only for the
   // leftmost =; nested ones compare, which the set membership handles.
@@ -89,6 +152,11 @@ bool SemanticAnnotator::VisitWithStatement(AST::WithStatement &node) {
 
 bool SemanticAnnotator::VisitFunctionCallExpression(AST::FunctionCallExpression &node) {
   validate_call(node);
+  if (gml_equals_ && node.arguments.size() > 1) {
+    std::vector<AST::Node *> arguments;
+    for (auto &arg : node.arguments) arguments.push_back(arg.get());
+    node.evaluate_in_order = OrderMatters(arguments);
+  }
   return true;
 }
 

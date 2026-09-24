@@ -4611,6 +4611,22 @@ TEST(ParserTest, GmlOperatorPrecedence) {
   EXPECT_THAT(out, HasSubstr("t = (a == b) < c"));
 }
 
+// GML evaluates arguments and operands left to right; the printer binds them
+// in order where a side effect makes the order observable.
+TEST(ParserTest, GmlEvaluationOrder) {
+  ParserTester test = ParserTester::CreateWithoutCpp("r = f(g(), h()); s = g() + x; t = f(1, x);");
+  auto node = test->ParseCode();
+  ASSERT_NE(node, nullptr);
+  SemanticAnnotator annotator(&test.herr, test.context->language_fe);
+  node->RecurusiveVisit(annotator);
+  AST::CppPrettyPrinter v;
+  ASSERT_TRUE(v.VisitCode(*node->As<AST::CodeBlock>()));
+  std::string out = v.GetPrintedCode();
+  EXPECT_THAT(out, HasSubstr("auto&& enigma_arg0 = g(); auto&& enigma_arg1 = h();"));
+  EXPECT_THAT(out, HasSubstr("auto&& enigma_lhs = g();"));
+  EXPECT_THAT(out, HasSubstr("t = f(1, x)"));
+}
+
 // EDL's / is real division: the annotator marks it and the printer coerces
 // the divisor, so 1/4 emits 0.25's worth of arithmetic instead of C++'s 0.
 // Unannotated trees print verbatim (round-trip fidelity).

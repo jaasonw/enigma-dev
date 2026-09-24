@@ -191,6 +191,10 @@ class AST {
     /// TT_EQUALS nodes and the printer emits ==.
     bool lower_gml_equals = false;
 
+    /// GML evaluates operands left to right; C++ leaves it unspecified.
+    /// Marked by the annotator where the order is observable.
+    bool evaluate_in_order = false;
+
     BASIC_NODE_ROUTINES(BinaryExpression);
 
     BinaryExpression(PNode left_, PNode right_, Operation operation_):
@@ -202,6 +206,8 @@ class AST {
   struct FunctionCallExpression : TypedNode<NodeType::FUNCTION_CALL> {
     PNode function;
     std::vector<PNode> arguments;
+    /// As BinaryExpression::evaluate_in_order, for the arguments.
+    bool evaluate_in_order = false;
 
     BASIC_NODE_ROUTINES(FunctionCallExpression);
 
