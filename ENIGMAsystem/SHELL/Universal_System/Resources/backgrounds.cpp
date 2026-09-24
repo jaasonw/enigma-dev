@@ -18,6 +18,7 @@
 **/
 
 #include "backgrounds_internal.h"
+#include "Universal_System/roomsystem.h"
 #include "Universal_System/image_formats.h"
 #include "Universal_System/nlpo2.h"
 #include "Graphics_Systems/General/GScolor_macros.h"
@@ -81,7 +82,13 @@ int background_create_color(unsigned w, unsigned h, int col, bool preload) {
 bool background_replace(int back, std::string filename, bool transparent, bool smooth, bool preload, bool free_texture,
                         bool mipmap) {
   backgrounds.get(back).FreeTexture();
-  return (backgrounds.replace(back, background_add_helper(filename, transparent, smooth, preload, mipmap)) != -1);
+  bool ok = backgrounds.replace(back, background_add_helper(filename, transparent, smooth, preload, mipmap)) != -1;
+  for (int i = 0; i < 8; i++)
+    if (int(background_index[i]) == back) {
+      background_width[i] = background_get_width(back);
+      background_height[i] = background_get_height(back);
+    }
+  return ok;
 }
 
 void background_save(int back, std::string fname) {
