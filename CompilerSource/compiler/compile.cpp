@@ -187,6 +187,7 @@ DLLEXPORT int compileEGMf(deprecated::JavaStruct::EnigmaStruct *es, const char* 
 
 DLLEXPORT int compileProto(const buffers::Project *proj, const char* exe_filename, int mode) {
   GameData gameData(*proj, &current_language->event_data());
+  if (gameData.transfer_error) return gameData.transfer_error;
   return current_language->compile(gameData, exe_filename, mode);
 }
 
@@ -713,7 +714,9 @@ int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) 
       idpr("Failed to write resources.",-1); return 12;
     }
 
-    write_res_helper(gameModule, resourceblock_start, game);
+    if (int err = write_res_helper(gameModule, resourceblock_start, game)) {
+      idpr("Failed to add resources.",-1); return err;
+    }
   }
 
   /**  * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
@@ -814,7 +817,9 @@ int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) 
       idpr("Failed to add resources.",-1); return 13;
     }
 
-    write_res_helper(gameModule, resourceblock_start, game);
+    if (int err = write_res_helper(gameModule, resourceblock_start, game)) {
+      idpr("Failed to add resources.",-1); return err;
+    }
   }
 
 
