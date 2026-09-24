@@ -541,24 +541,24 @@ struct variant : enigma::variant_real_union, enigma::variant_string_wrapper {
   // ===========================================================================
 
   template<typename T>
-  decltype(0ULL << (int)*(T*)nullptr) operator<<(T x) const {
-    return bit_cast<unsigned long long>(rval.d) << (int) x;
+  decltype(0LL << (int)*(T*)nullptr) operator<<(T x) const {
+    return (long long) rval.d << (int) x;
   }
   template<typename T>
-  decltype(0ULL >> (int)*(T*)nullptr) operator>>(T x) const {
-    return bit_cast<unsigned long long>(rval.d) >> (int) x;
+  decltype(0LL >> (int)*(T*)nullptr) operator>>(T x) const {
+    return (long long) rval.d >> (int) x;
   }
   template<typename T>
-  decltype(0ULL & (long long)*(T*)nullptr) operator&(T x) const {
-    return bit_cast<unsigned long long>(rval.d) & (long long) x;
+  decltype(0LL & (long long)*(T*)nullptr) operator&(T x) const {
+    return (long long) rval.d & (long long) x;
   }
   template<typename T>
-  decltype(0ULL | (long long)*(T*)nullptr) operator|(T x) const {
-    return bit_cast<unsigned long long>(rval.d) | (long long) x;
+  decltype(0LL | (long long)*(T*)nullptr) operator|(T x) const {
+    return (long long) rval.d | (long long) x;
   }
   template<typename T>
-  decltype(0ULL | (long long)*(T*)nullptr) operator^(T x) const {
-    return bit_cast<unsigned long long>(rval.d) ^ (long long) x;
+  decltype(0LL | (long long)*(T*)nullptr) operator^(T x) const {
+    return (long long) rval.d ^ (long long) x;
   }
 
   // Miscellanea
