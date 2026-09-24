@@ -339,6 +339,8 @@ void screen_refresh() {
 void screen_redraw()
 {
   enigma::scene_begin();
+  graphics_set_viewport(0, 0, window_get_width(), window_get_height());
+  draw_clear(window_get_color());
 
   if (!view_enabled)
   {
