@@ -94,6 +94,40 @@ void AST::CppPrettyPrinter::CollectDeclaredNames(AST::Node &root) {
   root.accept(collector);
 }
 
+namespace {
+bool IsHoistableVar(AST::DeclarationStatement &node) {
+  if (node.storage_class != AST::DeclarationStatement::StorageClass::TEMPORARY) return false;
+  if (!node.clause || !node.clause->specifiers) return false;
+  jdi::definition *def = node.clause->specifiers->to_jdi_fulltype().def;
+  if (!def || def->name != "var") return false;
+  for (auto &d : node.clause->declarators) {
+    if (d->name.content.empty()) return false;
+    if (d->declarator_expr && d->declarator_expr->type != AST::NodeType::IDENTIFIER) return false;
+    if (d->init && d->init->kind != AST::Initializer::Kind::ASSIGN) return false;
+  }
+  return true;
+}
+
+struct VarCollector : AST::Visitor {
+  std::set<std::string, std::less<>> *out;
+  explicit VarCollector(std::set<std::string, std::less<>> *out): out(out) {}
+  bool VisitDeclarationStatement(AST::DeclarationStatement &node) final {
+    if (IsHoistableVar(node))
+      for (auto &d : node.clause->declarators) out->insert(std::string(d->name.content));
+    return true;
+  }
+};
+}  // namespace
+
+void AST::CppPrettyPrinter::HoistVarDeclarations(AST::Node &root) {
+  VarCollector collector(&hoisted_vars_);
+  root.RecurusiveVisit(collector);
+  if (hoisted_vars_.empty()) return;
+  std::string decl = "    var";
+  for (const std::string &name : hoisted_vars_) decl += (decl.size() > 7 ? ", " : " ") + name;
+  print(decl + ";\n");
+}
+
 bool AST::CppPrettyPrinter::VisitIdentifierAccess(AST::IdentifierAccess &node) {
   if (print_type) print("auto ");
   std::string name = node.name.content;
@@ -721,6 +755,17 @@ bool AST::CppPrettyPrinter::VisitNewExpression(AST::NewExpression &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitDeclarationStatement(AST::DeclarationStatement &node) {
+  if (!hoisted_vars_.empty() && IsHoistableVar(node)) {
+    bool printed = false;
+    for (auto &entry : node.clause->declarators) {
+      if (!entry->init) continue;
+      if (printed) print(", ");
+      print(std::string(entry->name.content));
+      if (!VisitInitializer(*entry->init)) return false;
+      printed = true;
+    }
+    return true;
+  }
   bool is_global = node.storage_class == DeclarationStatement::StorageClass::GLOBAL;
   bool is_local = node.storage_class == DeclarationStatement::StorageClass::LOCAL;
   if (is_global || is_local) {
