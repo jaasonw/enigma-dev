@@ -87,8 +87,9 @@ namespace enigma
         //gtw = fw;
         glyphdata[i] = data;
 
-        // Here we calculate the bbox
-        if (!prop)
+        // Here we calculate the bbox. Without pixels (no graphics system) every
+        // glyph keeps its full cell.
+        if (!prop || !data)
            glyphmetrics[i].x = 0,   glyphmetrics[i].y = 0,
            glyphmetrics[i].w = gwm-1, glyphmetrics[i].h = ghm-1;
         else
@@ -151,7 +152,7 @@ namespace enigma
       {
         fontglyph& fg = fgr.glyphs[i];
         // Copy the SpriteFont glyph image into the big texture we just allocated
-        for (int yy = 0; yy < glyphmetrics[i].h; yy++) {
+        for (int yy = 0; glyphdata[i] && yy < glyphmetrics[i].h; yy++) {
           for (int xx = 0; xx < glyphmetrics[i].w; xx++) {
             for (int channel = 0; channel < 4; ++channel)
             bigtex[4*(w*(glyphmetrics[i].y + yy) + glyphmetrics[i].x + xx) + channel] = (glyphdata[i])[4*(gtw*(glyphy[i] + yy) + xx + glyphx[i]) + channel];

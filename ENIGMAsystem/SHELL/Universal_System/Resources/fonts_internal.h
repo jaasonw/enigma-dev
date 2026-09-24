@@ -66,7 +66,7 @@ namespace enigma
       if (texture >= 0) graphics_delete_texture(texture);
       texture = -1;
     }
-    bool isDestroyed() const { return texture == -1 || glyphRanges.empty(); }
+    bool isDestroyed() const { return glyphRanges.empty(); }
 
     static const char* getAssetTypeName() { return "font"; }
   };
