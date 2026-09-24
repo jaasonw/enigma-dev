@@ -335,7 +335,12 @@ bool AST::CppPrettyPrinter::VisitWithStatement(AST::WithStatement &node) {
     print(")");
   }
 
+  // Bare names in the body belong to the iterated instance, so resolve them
+  // through self as script code does, not as members of this object.
+  const bool saved_is_script = is_script;
+  if (language_fe) is_script = true;
   VISIT_AND_CHECK(node.body);
+  is_script = saved_is_script;
   PrintSemiColon(node.body);
 
   return true;
