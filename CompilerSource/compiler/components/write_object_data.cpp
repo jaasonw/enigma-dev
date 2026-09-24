@@ -954,8 +954,12 @@ static void write_object_event_funcs(ofstream& wto, const parsed_object *const o
     // TODO(JoshDreamland): This is a pretty major hack; it's an extra line
     // for no reason 99% of the time, and it doesn't allow us to give any
     // feedback as to why a call to event_inherited() may not be valid.
-    if (object->InheritsSpecifically(event.ev_id) &&
-        event.ast.lexer->GetCode().find("event_inherited") != std::string::npos) {
+    bool ancestor_has_event = false;
+    for (const parsed_object *p = object; p->parent && !ancestor_has_event; p = p->parent)
+      ancestor_has_event = p->InheritsSpecifically(event.ev_id);
+    const std::string &code = event.ast.lexer->GetCode();
+    if (ancestor_has_event && (code.find("event_inherited") != std::string::npos ||
+                               code.find("action_inherited") != std::string::npos)) {
       wto << "#define event_inherited OBJ_" + object->parent->name + "::myevent_" + evname + "\n";
       defined_inherited = true;
     }
