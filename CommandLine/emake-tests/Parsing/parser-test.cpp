@@ -4496,6 +4496,17 @@ TEST(ParserTest, GmlWordOperators) {
   EXPECT_EQ(test->current_token().type, TT_ENDOFCODE);
 }
 
+TEST(ParserTest, GmlWordOperatorsPrint) {
+  ParserTester test = ParserTester::CreateWithoutCpp("if(not a) b = c xor d;");
+  auto node = test->ParseCode();
+  ASSERT_NE(node, nullptr);
+  AST::CppPrettyPrinter v;
+  ASSERT_TRUE(v.VisitCode(*node->As<AST::CodeBlock>()));
+  std::string out = v.GetPrintedCode();
+  EXPECT_THAT(out, HasSubstr("!a"));
+  EXPECT_THAT(out, HasSubstr("(bool(c) != bool(d))"));
+}
+
 TEST(ParserTest, GmlDoUntil) {
   ParserTester test = ParserTester::CreateWithoutCpp("do x += 1 until (x > 3)");
   auto node = test->ParseCode();
