@@ -67,11 +67,13 @@ Sprite sprite_add_helper(std::string filename, int imgnumb, bool precise, bool t
 
 namespace enigma_user {
 
-int sprite_get_width(int sprid) { 
+int sprite_get_width(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).width;
 }
 
 int sprite_get_height(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).height;
 }
 
@@ -88,46 +90,56 @@ gs_scalar sprite_get_texture_height_factor(int sprid, int subimg) {
 }
 
 int sprite_get_bbox_bottom(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).bbox.bottom();
 }
 
 int sprite_get_bbox_left(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).bbox.left();
 }
 
 int sprite_get_bbox_right(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).bbox.right();
 }
 
 int sprite_get_bbox_top(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).bbox.top();
 }
 
 int sprite_get_bbox_mode(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).bbox_mode;
 }
 
 int sprite_get_bbox_bottom_relative(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   const Sprite& spr = sprites.get(sprid);
   return spr.bbox.bottom() - spr.yoffset;
 }
 
 int sprite_get_bbox_left_relative(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   const Sprite& spr = sprites.get(sprid);
   return spr.bbox.left() - spr.xoffset;
 }
 
 int sprite_get_bbox_right_relative(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   const Sprite& spr = sprites.get(sprid);
   return spr.bbox.right() - spr.xoffset;
 }
 
 int sprite_get_bbox_top_relative(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   const Sprite& spr = sprites.get(sprid);
   return spr.bbox.top() - spr.yoffset;
 }
 
 int sprite_get_number(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).SubimageCount();
 }
 
@@ -138,10 +150,12 @@ int sprite_get_texture(int sprid, int subimage) {
 }
 
 int sprite_get_xoffset(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).xoffset;
 }
 
 int sprite_get_yoffset(int sprid) {
+  if (!sprites.exists(sprid)) return 0;
   return sprites.get(sprid).yoffset;
 }
 
