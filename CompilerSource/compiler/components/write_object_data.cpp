@@ -510,8 +510,16 @@ static void implement_event_groups(std::ostream &wto, const parsed_object *objec
         << event_stack.event_key.BaseFunctionName();
     if (event_stack.event_key.HasDispatcher()) wto << "_dispatcher";
     wto << "() {\n";
-    for (ParsedEvent *event : event_stack) {
-      const auto &ev = event->ev_id;
+    // This override replaces the parent's, so it also runs inherited events.
+    std::map<Event, std::string> events;
+    for (ParsedEvent *event : event_stack) events.emplace(event->ev_id, "");
+    for (const parsed_object *p = object->parent; p; p = p->parent)
+      for (const ParsedEventGroup &group : p->stacked_events)
+        if (!(group.event_key < event_stack.event_key) &&
+            !(event_stack.event_key < group.event_key))
+          for (ParsedEvent *event : group)
+            events.emplace(event->ev_id, "OBJ_" + p->name + "::");
+    for (const auto &[ev, owner] : events) {
       // Use the full function name to call individual events in this stack.
       const string evname = ev.TrueFunctionName();
       int indent = 2;
@@ -520,12 +528,12 @@ static void implement_event_groups(std::ostream &wto, const parsed_object *objec
         if (ev.HasSubCheckExpression()) {
           wto << "  if (" << ev.SubCheckExpression() << ") {\n";
         } else {
-          wto << "  if (myevent_" + evname + "_subcheck()) {\n";
+          wto << "  if (" + owner + "myevent_" + evname + "_subcheck()) {\n";
         }
       }
       const std::string logic = ev.HasDispatcher()
-                                    ? ev.DispatcherCode("myevent_" + evname)
-                                    : "myevent_" + evname + "();";
+                                    ? ev.DispatcherCode(owner + "myevent_" + evname)
+                                    : owner + "myevent_" + evname + "();";
       PrintIndentedCode(wto, logic, indent);
       if (ev.HasSubCheck())
         wto << "  }\n";
