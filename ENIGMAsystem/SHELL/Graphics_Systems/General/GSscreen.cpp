@@ -341,6 +341,10 @@ void screen_redraw()
   enigma::scene_begin();
   graphics_set_viewport(0, 0, window_get_width(), window_get_height());
   draw_clear(window_get_color());
+  for (int i = 0; i < 8; i++) {
+    view_xview[i] = nearbyint((double) view_xview[i]); view_yview[i] = nearbyint((double) view_yview[i]);
+    view_wview[i] = nearbyint((double) view_wview[i]); view_hview[i] = nearbyint((double) view_hview[i]);
+  }
 
   if (!view_enabled)
   {
