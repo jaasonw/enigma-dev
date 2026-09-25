@@ -348,12 +348,14 @@ static NameSet ScriptNames(const GameData &game) {
 
 int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) {
   std::filesystem::path exename;
+  std::string exename_u8;  // owns exe_filename once the extension is appended
   if (exe_filename) {
     exename = exe_filename;
     const std::filesystem::path buildext = compilerInfo.exe_vars["BUILD-EXTENSION"];
     if (!string_ends_with(exename.u8string(), buildext.u8string())) {
       exename += buildext;
-      exe_filename = exename.u8string().c_str();
+      exename_u8 = exename.u8string();
+      exe_filename = exename_u8.c_str();
     }
   }
 
