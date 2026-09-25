@@ -512,7 +512,11 @@ int LoadSettings(Decoder &dec, Settings& set) {
   dec.read4(); // LOAD_IMAGE_ALPHA
   dec.readBool(); // SCALE_PROGRESS_BAR
 
-  dec.skip(dec.read4()); // GAME_ICON
+  if (size_t icon_len = dec.read4()) { // GAME_ICON: a whole .ico file
+    fs::path icon = TempFileName("gmk_game_icon");
+    std::ofstream(icon, std::ios::binary).write(dec.read(icon_len).get(), icon_len);
+    gen->set_game_icon(icon.u8string());
+  }
 
   // DISPLAY_ERRORS, WRITE_TO_LOG, ABORT_ON_ERROR
   dec.readBool(); dec.readBool(); dec.readBool();
