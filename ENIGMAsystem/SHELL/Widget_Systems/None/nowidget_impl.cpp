@@ -106,7 +106,7 @@ bool show_question(string str) {
   char answer = 0;
   while (answer != 'N' && answer != 'Y') {
     cout << endl << "[Y/N]:";
-    cin >> answer;
+    if (!(cin >> answer)) return false;  // no console (headless server): no
     answer = toupper(answer);
   }
   return (answer == 'Y');
