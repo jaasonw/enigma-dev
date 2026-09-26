@@ -33,6 +33,7 @@
 #include <vector>
 #include <iostream>
 #include <regex>
+#include <set>
 
 #include "settings.h"
 #include "general/parse_basics_old.h"
@@ -225,9 +226,92 @@ namespace syncheck
     return out;
   }
 
+  struct GmlToken { size_t pos, len; };
+
+  // Splits GML into identifiers, literals and punctuation (two-character
+  // comparison and logic operators kept whole),
+  // skipping whitespace and comments. GML strings have no escapes.
+  static vector<GmlToken> gml_tokens(const string &code) {
+    vector<GmlToken> toks;
+    for (size_t i = 0; i < code.size();) {
+      const char c = code[i];
+      if (isspace((unsigned char) c)) { i++; continue; }
+      if (c == '/' && i + 1 < code.size() && code[i + 1] == '/') {
+        while (i < code.size() && code[i] != '\n') i++;
+        continue;
+      }
+      if (c == '/' && i + 1 < code.size() && code[i + 1] == '*') {
+        const size_t e = code.find("*/", i + 2);
+        i = e == string::npos ? code.size() : e + 2;
+        continue;
+      }
+      size_t j = i + 1;
+      if (c == '"' || c == '\'') {
+        const size_t e = code.find(c, i + 1);
+        j = e == string::npos ? code.size() : e + 1;
+      } else if (isalnum((unsigned char) c) || c == '_') {
+        while (j < code.size() && (isalnum((unsigned char) code[j]) || code[j] == '_')) j++;
+      } else if (j < code.size()) {
+        static const std::set<string> ops = {"&&", "||", "<=", ">=", "==", "!=", "->", "::"};
+        if (ops.count(code.substr(i, 2))) j++;
+      }
+      toks.push_back({i, j - i});
+      i = j;
+    }
+    return toks;
+  }
+
+  static bool is_gml_name(const string &t) {
+    static const std::set<string> word_ops = {"and", "or", "xor", "not", "div", "mod"};
+    return !t.empty() && (isalpha((unsigned char) t[0]) || t[0] == '_') && !word_ops.count(t);
+  }
+
+  // GML code uses C++ words (char, class, this, ...) as variable names. Keep
+  // one as C++ only where GML couldn't use a name there.
+  static bool keep_cpp_word(const string &word, const string &prev2, const string &prev,
+                            const string &next) {
+    if (prev == ".") return false;
+    if (word == "char") {
+      if (prev == "unsigned" || prev == "signed" || prev == "const" || prev == "new") return true;
+      if (is_gml_name(next) || next == "*" || next == "&" || next == "(" || next == "{" || next == "::") return true;
+      if (next == ")") return prev == "(" && !(is_gml_name(prev2) && prev2 != "sizeof" && prev2 != "return");
+      if (next == ">") return prev == "<" || prev == ",";
+      if (next == ",") return prev == "<";
+      return false;
+    }
+    return is_gml_name(next) || next == ":" || next == "->" || (word == "template" && next == "<");
+  }
+
+  static string gml_compat_prepass(const string &code) {
+    static const std::set<string> words = {
+      "char", "alignas", "asm", "class", "concept", "explicit", "export", "friend",
+      "namespace", "private", "protected", "public", "register", "requires",
+      "static_assert", "struct", "template", "this", "throw", "typeid", "union",
+      "using", "virtual"};
+    const vector<GmlToken> toks = gml_tokens(code);
+    auto text = [&](size_t k) { return k < toks.size() ? code.substr(toks[k].pos, toks[k].len) : string(); };
+
+    vector<std::pair<GmlToken, string>> edits;  // replace span with text
+    for (size_t k = 0; k < toks.size(); k++) {
+      const string t = text(k);
+      if (words.count(t) && !keep_cpp_word(t, k > 1 ? text(k - 2) : "", k ? text(k - 1) : "", text(k + 1)))
+        edits.push_back({toks[k], "gml_" + t});
+    }
+    if (edits.empty()) return code;
+    string out;
+    size_t at = 0;
+    for (const auto &ed : edits) {
+      out.append(code, at, ed.first.pos - at);
+      out += ed.second;
+      at = ed.first.pos + ed.first.len;
+    }
+    out.append(code, at, string::npos);
+    return out;
+  }
+
   int syntaxcheck(string code, string& newcode)
   {
-    code = lower_variable_exists(code);
+    code = gml_compat_prepass(lower_variable_exists(code));
     syerr = "No error";
     if (code.empty()) {
       newcode = code;
