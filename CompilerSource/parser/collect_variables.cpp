@@ -279,10 +279,10 @@ void collect_variables(language_adapter *lang, ParsedCode *parsed_code,
       if (nname=="exit") {
         stringstream newName;
         if (trackGotos) {
-          newName <<"goto enigma_block_end_" <<currGotoBlock <<";";
+          newName <<"goto enigma_block_end_" <<currGotoBlock;
           foundGoto = true;
         } else {
-          newName <<"return 0;";
+          newName <<"return 0";  // exit's own ; (written or automatic) ends it
         }
         code.replace(spos, 4, newName.str());
         synt.replace(spos, 4, string(newName.str().size(), 'X'));
