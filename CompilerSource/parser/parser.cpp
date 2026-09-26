@@ -852,8 +852,9 @@ int parser_secondary(CompileState &state, ParsedCode *parsed_code) {
         string valuevar = cname;
 
         string icode = "{", isynt = "{";
-        icode += "const evariant" + valuevar + "=" + svalue + ";";
-        isynt += "ttttttttttttt" + string(valuevar.length(),'n') + "=" + svaluelex + ";";
+        const string valuetype = "const evariant";
+        icode += valuetype + valuevar + "=" + svalue + ";";
+        isynt += string(valuetype.length(), 't') + string(valuevar.length(),'n') + "=" + svaluelex + ";";
         icode += "switch(enigma::switch_hash(" + valuevar + ")){";
         isynt += "ssssss(nnnnnnnnnnnnnnnnnnn(" + string(valuevar.length(), 'n') + ")){";
 
