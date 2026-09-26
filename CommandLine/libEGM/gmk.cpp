@@ -479,8 +479,9 @@ int LoadSettings(Decoder &dec, Settings& set) {
   if (ver > 530) gfx->set_use_synchronization(dec.readBool());
   if (ver >= 800) dec.readBool(); // DISABLE_SCREENSAVERS
   gfx->set_allow_fullscreen_change(dec.readBool());
-  // LET_F1_SHOW_GAME_INFO, LET_ESC_END_GAME, LET_F5_SAVE_F6_LOAD
-  dec.readBool(); dec.readBool(); dec.readBool();
+  dec.readBool(); // LET_F1_SHOW_GAME_INFO
+  set.mutable_shortcuts()->set_let_escape_end_game(dec.readBool());
+  dec.readBool(); // LET_F5_SAVE_F6_LOAD
   if (ver == 530) dec.skip(8); //unknown bytes, both 0
   if (ver > 600) {
     dec.readBool(); // LET_F9_SCREENSHOT
