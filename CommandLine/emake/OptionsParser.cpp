@@ -268,12 +268,12 @@ std::string OptionsParser::APIyaml(const buffers::resources::Settings* currentCo
   const auto &compilerSettings = currentConfig->compiler();
   int inherit_strings = compilerSettings.has_inherit_strings() ? compilerSettings.inherit_strings() : 0;
   int inherit_escapes = compilerSettings.inherit_escapes() ? compilerSettings.inherit_escapes() : 0;
-  int inherit_increment = compilerSettings.has_inherit_increment() ? compilerSettings.inherit_increment() : 0;
+  int inherit_increment = compilerSettings.has_inherit_increment() ? compilerSettings.inherit_increment() : 1;
   int inherit_equivalence = compilerSettings.inherit_equivalence() ? compilerSettings.inherit_equivalence() : 0;
   int inherit_literals = compilerSettings.has_inherit_literals() ? compilerSettings.inherit_literals() : 0;
   int inherit_negatives = compilerSettings.has_inherit_negatives() ? compilerSettings.inherit_negatives() : 0;
-  bool inherit_objects = compilerSettings.has_inherit_objects() ? compilerSettings.inherit_objects() : 0;
-  bool automatic_semicolons = compilerSettings.has_automatic_semicolons() ? compilerSettings.automatic_semicolons() : 0;
+  bool inherit_objects = compilerSettings.has_inherit_objects() ? compilerSettings.inherit_objects() : true;
+  bool automatic_semicolons = compilerSettings.has_automatic_semicolons() ? compilerSettings.automatic_semicolons() : true;
 
   std::string yaml;
   yaml += "%e-yaml\n";
