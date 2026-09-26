@@ -314,6 +314,18 @@ namespace syncheck
         edits.push_back({toks[k], "exit"});
         continue;
       }
+      // GM8 accepts for (a; b; c;): drop the ; before the header's closing paren.
+      if (t == "for" && text(k + 1) == "(") {
+        int depth = 0;
+        for (size_t e = k + 1; e < toks.size(); e++) {
+          const string u = text(e);
+          if (u == "(") depth++;
+          else if (u == ")" && --depth == 0) {
+            if (text(e - 1) == ";") edits.push_back({toks[e - 1], ""});
+            break;
+          }
+        }
+      }
       const bool stmt_start = k == 0 || text(k - 1) == ";" || text(k - 1) == "{" || text(k - 1) == "}" ||
           text(k - 1) == ")" || text(k - 1) == ":" || text(k - 1) == "else" || code.find('\n', toks[k - 1].pos) < toks[k].pos;
       if (t == "var" && stmt_start) {
@@ -341,6 +353,7 @@ namespace syncheck
         edits.push_back({toks[k], "gml_" + t});
     }
     if (edits.empty()) return code;
+    std::sort(edits.begin(), edits.end(), [](const auto &a, const auto &b) { return a.first.pos < b.first.pos; });
     string out = hoisted.empty() ? "" : hoisted + ";\n";
     size_t at = 0;
     for (const auto &ed : edits) {
