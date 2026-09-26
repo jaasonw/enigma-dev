@@ -442,9 +442,7 @@ void screen_redraw()
 
   enigma::scene_end();
 
-  // GM8.1 manual specifies that screen_redraw should call screen_refresh
-  // "The first function redraws the internal image and then refreshes the screen image."
-  screen_refresh();
+  // No refresh: a swap here leaves the back buffer undefined for screen_save.
 }
 
 int screen_save(string filename) { //Assumes native integers are little endian
