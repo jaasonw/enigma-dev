@@ -70,6 +70,10 @@ namespace enigma
       if (!fread(&vSep,4,1,exe)) return;
 
       unpacked = width*height*4;
+      if (unpacked == 0) {
+        backgrounds.assign(bkgid, Background(0, 0, 0, 0, -1, useAsTileset, tileWidth, tileHeight, hOffset, vOffset, hSep, vSep));
+        continue;
+      }
 
       unsigned int size;
       if (!fread(&size,4,1,exe)){};
