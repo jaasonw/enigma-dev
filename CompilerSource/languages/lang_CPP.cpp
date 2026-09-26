@@ -76,6 +76,8 @@ void lang_CPP::load_extension_locals() {
 
 void parser_init();
 
+void wite_asset_enum(const std::filesystem::path& fName);
+
 syntax_error *lang_CPP::definitionsModified(const char* wscode, const char* targetYaml)
 {
   cout << "Parsing settings..." << endl;
@@ -92,7 +94,12 @@ syntax_error *lang_CPP::definitionsModified(const char* wscode, const char* targ
   if (of) fputs(wscode,of), fclose(of);
   
   cout << "Opening ENIGMA for parse..." << endl;
-  
+
+  // Resources/asset_index.h includes the generated AssetEnum.h, which the
+  // game build otherwise writes only after this parse.
+  std::filesystem::create_directories(codegen_directory);
+  wite_asset_enum(codegen_directory/"AssetEnum.h");
+
   llreader f((enigma_root/"ENIGMAsystem/SHELL/SHELLmain.cpp").u8string().c_str());
   int res = 1;
   DECLARE_TIME_TYPE ts, te;
