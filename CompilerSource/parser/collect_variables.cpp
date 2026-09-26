@@ -144,7 +144,7 @@ void collect_variables(language_adapter *lang, ParsedCode *parsed_code,
               cout << "ERASE FROM CODE: " << code.substr(dec_start_pos,pos+1-dec_start_pos) << endl;
               code.erase(dec_start_pos,pos+1-dec_start_pos);
               synt.erase(dec_start_pos,pos+1-dec_start_pos);
-              pos = dec_start_pos;
+              pos = dec_start_pos - 1;  // the loop's ++ lands on what followed
             }
             else
             {
@@ -152,8 +152,8 @@ void collect_variables(language_adapter *lang, ParsedCode *parsed_code,
               code.replace(dec_start_pos,dec_equals_at-dec_start_pos, dec_name);
               synt.replace(dec_start_pos,dec_equals_at-dec_start_pos, string(dec_name.length(),'n'));
               pos -= dec_equals_at - dec_start_pos - 1 - dec_name.length();
+              dec_start_pos = pos;
             }
-            dec_start_pos = pos;
           }
           else //Add to this scope
           {
