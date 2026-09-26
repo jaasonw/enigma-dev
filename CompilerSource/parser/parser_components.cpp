@@ -897,6 +897,8 @@ void print_to_file(string code,string synt,const unsigned int strc, const varray
             str_ind++;
             if (synt[pos+1] == '+' and synt[pos+2] == '"')
               synt[pos+1] = code[pos+1] = ' ';
+            else if (pos + 1 < len and (isalnum((unsigned char) code[pos+1]) or code[pos+1] == '_'))
+              of << ' ';  // "" and x: a word right after a literal reads as a C++ suffix
         break;
       case 's':
       case 'f':
