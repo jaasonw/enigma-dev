@@ -414,8 +414,8 @@ int parser_reinterpret(string &code,string &synt)
       cout << "AND EN = " << en  << endl;
       ++pos; for (unsigned lvl = 1; en and lvl; pos++)
       {
-        if (synt[pos] == '(') { lvl++; continue; }
-        if (synt[pos] == ')') { lvl--; continue; }
+        if (synt[pos] == '(' or synt[pos] == '[') { lvl++; continue; }
+        if (synt[pos] == ')' or synt[pos] == ']') { lvl--; continue; }
         if (lvl == 1 and synt[pos] == ',') en--;
       }
       cout << "CHECK POINT" << endl;
@@ -425,8 +425,8 @@ int parser_reinterpret(string &code,string &synt)
         pos += 19;
         for (unsigned lvl = 1; lvl; pos++)
         {
-          if (synt[pos] == '(') { lvl++; continue; }
-          if (synt[pos] == ')') { lvl--; continue; }
+          if (synt[pos] == '(' or synt[pos] == '[') { lvl++; continue; }
+          if (synt[pos] == ')' or synt[pos] == ']') { lvl--; continue; }
         }
         pos--;
         code.insert(pos,")");
