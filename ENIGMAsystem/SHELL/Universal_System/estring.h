@@ -34,6 +34,11 @@ std::string shorten(tstring str);
 
 #endif
 
+namespace enigma {
+extern bool gml_hash_newlines;
+std::string gml_display_text(const std::string &text);
+}
+
 namespace enigma_user {
 
 std::string base64_encode(std::string const& str);

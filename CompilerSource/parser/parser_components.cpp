@@ -808,14 +808,7 @@ static inline string string_settings_escape(string n)
     switch (n[pos])
     {
       case '\\':
-          if (n[pos+1] == '#') // Backslashes can only escape number signs
-            n.erase(pos,1); // It happens to be escaping this one
-          else
-            n.insert(pos++,1,'\\'); // Ordinary backslash; escape it for C++.
-        break;
-      case '#':
-          n[pos] = 'n'; // Newlines are expressed with #
-          n.insert(pos++,1,'\\');
+          n.insert(pos++,1,'\\'); // Preserve GML backslashes in the string value.
         break;
       case '\n': // Newlines are allowed in strings in GML, but not in C
           n[pos] = 'n';

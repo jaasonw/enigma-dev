@@ -25,6 +25,7 @@
 #include "GSsprite.h"
 
 #include "Universal_System/var4.h"
+#include "Universal_System/estring.h"
 #include "Universal_System/math_consts.h"
 #include "Universal_System/Resources/fonts_internal.h"
 #include "Universal_System/Resources/sprites.h"
@@ -115,7 +116,7 @@ namespace enigma_user {
 
 double string_char_width(evariant vstr)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
   size_t i = 0;
   uint32_t character = getUnicodeCharacter(str, i);
@@ -132,7 +133,7 @@ double string_char_width(evariant vstr)
 
 unsigned int string_width(evariant vstr)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
   float mlen = 0, tlen = 0, slen = get_space_width(fnt);
   for (size_t i = 0; i < str.length(); i++)
@@ -155,7 +156,7 @@ unsigned int string_width(evariant vstr)
 
 unsigned int string_height(evariant vstr)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
   float hgt = fnt.height;
   for (size_t i = 0; i < str.length(); i++)
@@ -166,7 +167,7 @@ unsigned int string_height(evariant vstr)
 
 unsigned int string_width_ext(evariant vstr, gs_scalar sep, gs_scalar w) //here sep doesn't do anything, but I can't make it 'default = ""', because its the second argument
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   float width = 0, maxwidth = 0, slen = get_space_width(fnt);
@@ -191,7 +192,7 @@ unsigned int string_width_ext(evariant vstr, gs_scalar sep, gs_scalar w) //here 
 
 unsigned int string_height_ext(evariant vstr, gs_scalar sep, gs_scalar w)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   float width = 0, tw = 0, height = fnt.height, slen = get_space_width(fnt);
@@ -226,7 +227,7 @@ unsigned int string_height_ext(evariant vstr, gs_scalar sep, gs_scalar w)
 
 unsigned int string_width_line(evariant vstr, int line)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
   float len = 0, cl = 0, slen = get_space_width(fnt);
   for (size_t i = 0; i < str.length(); i++)
@@ -258,7 +259,7 @@ unsigned int string_width_line(evariant vstr, int line)
 //TODO: These next functions can be rewritten to get rid of Schlemiel the Painter's algorithm happening in the second for loop
 unsigned int string_width_ext_line(evariant vstr, gs_scalar w, int line)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   float width = 0, tw = 0; int cl = 0, slen = get_space_width(fnt);
@@ -298,7 +299,7 @@ unsigned int string_width_ext_line(evariant vstr, gs_scalar w, int line)
 
 unsigned int string_width_ext_line_count(evariant vstr, gs_scalar w)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   float width = 0, tw = 0, slen = get_space_width(fnt);
@@ -341,9 +342,9 @@ namespace enigma_user
 
 void draw_text(gs_scalar x, gs_scalar y, evariant vstr)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
-  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y +fnt.yoffset - string_height(str)/2 : y + fnt.yoffset - string_height(str);
+  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y +fnt.yoffset - string_height(toString(vstr))/2 : y + fnt.yoffset - string_height(toString(vstr));
   float slen = get_space_width(fnt);
   if (halign == fa_left){
       gs_scalar xx = x;
@@ -371,17 +372,17 @@ void draw_text(gs_scalar x, gs_scalar y, evariant vstr)
         }
       }
   } else {
-      gs_scalar xx = halign == fa_center ? x-gs_scalar(string_width_line(str,0)/2) : x-gs_scalar(string_width_line(str,0)), line = 0;
+      gs_scalar xx = halign == fa_center ? x-gs_scalar(string_width_line(toString(vstr),0)/2) : x-gs_scalar(string_width_line(toString(vstr),0)), line = 0;
       for (size_t i = 0; i < str.length(); i++)
       {
         uint32_t character = getUnicodeCharacter(str, i);
 
         if (character == '\r') {
           line +=1, yy += fnt.height, i += str[i+1] == '\n';
-          xx = halign == fa_center ? x-gs_scalar(string_width_line(str,line)/2) : x-gs_scalar(string_width_line(str,line));
+          xx = halign == fa_center ? x-gs_scalar(string_width_line(toString(vstr),line)/2) : x-gs_scalar(string_width_line(toString(vstr),line));
         } else if (character == '\n') {
           line +=1, yy += fnt.height;
-          xx = halign == fa_center ? x-gs_scalar(string_width_line(str,line)/2) : x-gs_scalar(string_width_line(str,line));
+          xx = halign == fa_center ? x-gs_scalar(string_width_line(toString(vstr),line)/2) : x-gs_scalar(string_width_line(toString(vstr),line));
         } else {
           fontglyph g = findGlyph(fnt, character);
           if (character == ' ' or g.empty()) {
@@ -403,7 +404,7 @@ void draw_text(gs_scalar x, gs_scalar y, evariant vstr)
 
 void draw_text_sprite(gs_scalar x, gs_scalar y, evariant vstr, int sep, int lineWidth, int sprite, int firstChar, int scale)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
 
   //Easy lookup of width/height, accounting for scale.
   int w = sprite_get_width(sprite)  * scale;
@@ -470,9 +471,9 @@ void draw_text_sprite(gs_scalar x, gs_scalar y, evariant vstr, int sep, int line
 
 void draw_text_skewed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar top, gs_scalar bottom)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
-  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y +fnt.yoffset - string_height(str)/2 : y + fnt.yoffset - string_height(str);
+  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y +fnt.yoffset - string_height(toString(vstr))/2 : y + fnt.yoffset - string_height(toString(vstr));
   float slen = get_space_width(fnt);
   if (halign == fa_left){
     gs_scalar xx = x;
@@ -500,16 +501,16 @@ void draw_text_skewed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar top, gs
       }
     }
   } else {
-    gs_scalar xx = halign == fa_center ? x-gs_scalar(string_width_line(str,0)/2) : x-gs_scalar(string_width_line(str,0)), line = 0;
+    gs_scalar xx = halign == fa_center ? x-gs_scalar(string_width_line(toString(vstr),0)/2) : x-gs_scalar(string_width_line(toString(vstr),0)), line = 0;
     for (size_t i = 0; i < str.length(); i++)
     {
       uint32_t character = getUnicodeCharacter(str, i);
       if (character == '\r') {
         line +=1, yy += fnt.height, i += str[i+1] == '\n';
-        xx = halign == fa_center ? x-gs_scalar(string_width_line(str,line)/2) : x-gs_scalar(string_width_line(str,line));
+        xx = halign == fa_center ? x-gs_scalar(string_width_line(toString(vstr),line)/2) : x-gs_scalar(string_width_line(toString(vstr),line));
       } else if (character == '\n') {
         line +=1, yy += fnt.height;
-        xx = halign == fa_center ? x-gs_scalar(string_width_line(str,line)/2) : x-gs_scalar(string_width_line(str,line));
+        xx = halign == fa_center ? x-gs_scalar(string_width_line(toString(vstr),line)/2) : x-gs_scalar(string_width_line(toString(vstr),line));
       } else {
         fontglyph g = findGlyph(fnt, character);
         if (character == ' ' or g.empty()) {
@@ -530,10 +531,10 @@ void draw_text_skewed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar top, gs
 
 void draw_text_ext(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar sep, gs_scalar w)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
-  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y + fnt.yoffset - string_height_ext(str,sep,w)/2 : y + fnt.yoffset - string_height_ext(str,sep,w);
+  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y + fnt.yoffset - string_height_ext(toString(vstr),sep,w)/2 : y + fnt.yoffset - string_height_ext(toString(vstr),sep,w);
   float slen = get_space_width(fnt);
   if (halign == fa_left){
     gs_scalar xx = x, width = 0, tw = 0;
@@ -571,14 +572,14 @@ void draw_text_ext(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar sep, gs_sc
       }
     }
   } else {
-    gs_scalar xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(str,w,0)/2) : x-gs_scalar(string_width_ext_line(str,w,0)), line = 0, width = 0, tw = 0;
+    gs_scalar xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(toString(vstr),w,0)/2) : x-gs_scalar(string_width_ext_line(toString(vstr),w,0)), line = 0, width = 0, tw = 0;
     for (size_t i = 0; i < str.length(); i++)
     {
       uint32_t character = getUnicodeCharacter(str, i);
       if (character == '\r') {
-        line += 1, xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(str,w,line)/2) : x-gs_scalar(string_width_ext_line(str,w,line)), yy += (sep+2 ? fnt.height : sep), i += str[i+1] == '\n', width = 0;
+        line += 1, xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(toString(vstr),w,line)/2) : x-gs_scalar(string_width_ext_line(toString(vstr),w,line)), yy += (sep+2 ? fnt.height : sep), i += str[i+1] == '\n', width = 0;
       } else if (character == '\n') {
-        line += 1, xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(str,w,line)/2) : x-gs_scalar(string_width_ext_line(str,w,line)), yy += (sep+2 ? fnt.height : sep), width = 0;
+        line += 1, xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(toString(vstr),w,line)/2) : x-gs_scalar(string_width_ext_line(toString(vstr),w,line)), yy += (sep+2 ? fnt.height : sep), width = 0;
       } else {
         fontglyph g = findGlyph(fnt, character);
         if (character == ' ' or g.empty()) {
@@ -593,7 +594,7 @@ void draw_text_ext(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar sep, gs_sc
           }
 
           if (width+tw >= w && w != -1)
-            line += 1, xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(str,w,line)/2) : x-gs_scalar(string_width_ext_line(str,w,line)), yy += (sep==-1 ? fnt.height : sep), width = 0, tw = 0;
+            line += 1, xx = halign == fa_center ? x-gs_scalar(string_width_ext_line(toString(vstr),w,line)/2) : x-gs_scalar(string_width_ext_line(toString(vstr),w,line)), yy += (sep==-1 ? fnt.height : sep), width = 0, tw = 0;
         } else {
           draw_primitive_begin_texture(pr_trianglestrip, fnt.texture);
           draw_vertex_texture(xx + g.x,  yy + g.y, g.tx, g.ty);
@@ -611,7 +612,7 @@ void draw_text_ext(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar sep, gs_sc
 
 void draw_text_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar xscale, gs_scalar yscale, double rot)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   rot *= M_PI/180;
@@ -625,9 +626,9 @@ void draw_text_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar xs
   if (valign == fa_top)
     yy = y + fnt.yoffset * cvy, xx = x + fnt.yoffset * svy;
   else if (valign == fa_middle)
-    tmpsize = string_height(str), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
+    tmpsize = string_height(toString(vstr)), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
   else
-    tmpsize = string_height(str), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
+    tmpsize = string_height(toString(vstr)), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
   tmpx = xx, tmpy = yy;
   if (halign == fa_left){
       int lines = 0, w;
@@ -661,7 +662,7 @@ void draw_text_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar xs
         }
       }
     } else {
-      tmpsize = string_width_line(str,0);
+      tmpsize = string_width_line(toString(vstr),0);
       if (halign == fa_center)
         xx = tmpx-tmpsize/2 * cvx, yy = tmpy+tmpsize/2 * svx;
       else
@@ -671,13 +672,13 @@ void draw_text_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar xs
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          lines += 1, tmpsize = string_width_line(str,lines), i += str[i+1] == '\n';
+          lines += 1, tmpsize = string_width_line(toString(vstr),lines), i += str[i+1] == '\n';
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
             xx = tmpx-tmpsize * cvx + lines * shi, yy = tmpy+tmpsize * svx + lines * chi;
         } else if (character == '\n') {
-          lines += 1, tmpsize = string_width_line(str,lines);
+          lines += 1, tmpsize = string_width_line(toString(vstr),lines);
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
@@ -709,7 +710,7 @@ void draw_text_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar xs
 
 void draw_text_ext_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar sep, gs_scalar w, gs_scalar xscale, gs_scalar yscale, double rot)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   rot *= M_PI/180;
@@ -723,9 +724,9 @@ void draw_text_ext_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scala
   if (valign == fa_top)
     yy = y + fnt.yoffset * cvy, xx = x + fnt.yoffset * svy;
   else if (valign == fa_middle)
-    tmpsize = string_height_ext(str,sep,w), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
+    tmpsize = string_height_ext(toString(vstr),sep,w), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
   else
-    tmpsize = string_height_ext(str,sep,w), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
+    tmpsize = string_height_ext(toString(vstr),sep,w), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
   tmpx = xx, tmpy = yy;
 
   if (halign == fa_left){
@@ -776,7 +777,7 @@ void draw_text_ext_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scala
       }
   } else {
       int lines = 0,width = 0, tw = 0;
-      tmpsize = string_width_ext_line(str,w,0);
+      tmpsize = string_width_ext_line(toString(vstr),w,0);
       if (halign == fa_center)
         xx = tmpx-tmpsize/2 * cvx, yy = tmpy+tmpsize/2 * svx;
       else
@@ -785,13 +786,13 @@ void draw_text_ext_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scala
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          lines += 1, tmpsize = string_width_ext_line(str,w,lines), width = 0, i += str[i+1] == '\n';
+          lines += 1, tmpsize = string_width_ext_line(toString(vstr),w,lines), width = 0, i += str[i+1] == '\n';
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
             xx = tmpx-tmpsize * cvx + lines * shi, yy = tmpy+tmpsize * svx + lines * chi;
         } else if (character == '\n') {
-          lines += 1, tmpsize = string_width_ext_line(str,w,lines), width = 0;
+          lines += 1, tmpsize = string_width_ext_line(toString(vstr),w,lines), width = 0;
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
@@ -814,7 +815,7 @@ void draw_text_ext_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scala
             }
 
             if (width+tw >= w && w != -1){
-            lines += 1, tmpsize = string_width_ext_line(str,w,lines);
+            lines += 1, tmpsize = string_width_ext_line(toString(vstr),w,lines);
             if (halign == fa_center)
               xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
             else
@@ -844,7 +845,7 @@ void draw_text_ext_transformed(gs_scalar x, gs_scalar y, evariant vstr, gs_scala
 
 void draw_text_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar xscale, gs_scalar yscale, double rot, int c1, int c2, int c3, int c4, gs_scalar a)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   rot *= M_PI/180;
@@ -859,20 +860,20 @@ void draw_text_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs_sca
   if (valign == fa_top)
     yy = y + fnt.yoffset * cvy, xx = x + fnt.yoffset * svy;
   else if (valign == fa_middle)
-    tmpsize = string_height(str), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
+    tmpsize = string_height(toString(vstr)), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
   else
-    tmpsize = string_height(str), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
+    tmpsize = string_height(toString(vstr)), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
   tmpx = xx, tmpy = yy;
   if (halign == fa_left){
       int lines = 0, w;
-      tmpsize = string_width_line(str,0);
+      tmpsize = string_width_line(toString(vstr),0);
       for (size_t i = 0; i < str.length(); i++)
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, i += str[i+1] == '\n', tmpsize = string_width_line(str,lines);
+          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, i += str[i+1] == '\n', tmpsize = string_width_line(toString(vstr),lines);
         } else if (character == '\n') {
-          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, tmpsize = string_width_line(str,lines);
+          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, tmpsize = string_width_line(toString(vstr),lines);
         } else {
           fontglyph g = findGlyph(fnt, character);
           if (character == ' ' or g.empty()) {
@@ -901,7 +902,7 @@ void draw_text_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs_sca
         }
       }
     } else {
-      tmpsize = string_width_line(str,0);
+      tmpsize = string_width_line(toString(vstr),0);
       if (halign == fa_center)
         xx = tmpx-tmpsize/2 * cvx, yy = tmpy+tmpsize/2 * svx;
       else
@@ -911,13 +912,13 @@ void draw_text_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs_sca
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          lines += 1, tmpsize = string_width_line(str,lines), i += str[i+1] == '\n', width = 0;
+          lines += 1, tmpsize = string_width_line(toString(vstr),lines), i += str[i+1] == '\n', width = 0;
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
             xx = tmpx-tmpsize * cvx + lines * shi, yy = tmpy+tmpsize * svx + lines * chi;
         } else if (character == '\n') {
-          lines += 1, tmpsize = string_width_line(str,lines), width = 0;
+          lines += 1, tmpsize = string_width_line(toString(vstr),lines), width = 0;
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
@@ -954,7 +955,7 @@ void draw_text_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs_sca
 
 void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs_scalar sep, gs_scalar w, gs_scalar xscale, gs_scalar yscale, double rot,int c1, int c2, int c3, int c4, gs_scalar a)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
   
   rot *= M_PI/180;
@@ -969,20 +970,20 @@ void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs
   if (valign == fa_top)
     yy = y + fnt.yoffset * cvy, xx = x + fnt.yoffset * svy;
   else if (valign == fa_middle)
-    tmpsize = string_height_ext(str,sep,w), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
+    tmpsize = string_height_ext(toString(vstr),sep,w), yy = y + (fnt.yoffset - tmpsize/2) * cvy, xx = x + (fnt.yoffset - tmpsize/2) * svy;
   else
-    tmpsize = string_height_ext(str,sep,w), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
+    tmpsize = string_height_ext(toString(vstr),sep,w), yy = y + (fnt.yoffset - tmpsize) * cvy, xx = x + (fnt.yoffset - tmpsize) * svy;
   tmpx = xx, tmpy = yy;
   if (halign == fa_left){
       int lines = 0, tw = 0, wi;
-      tmpsize = string_width_ext_line(str,w,0);
+      tmpsize = string_width_ext_line(toString(vstr),w,0);
       for (size_t i = 0; i < str.length(); i++)
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, i += str[i+1] == '\n', tmpsize = string_width_ext_line(str,w,lines);
+          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, i += str[i+1] == '\n', tmpsize = string_width_ext_line(toString(vstr),w,lines);
         } else if (character == '\n') {
-          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, tmpsize = string_width_ext_line(str,w,lines);
+          lines += 1, width = 0, xx = tmpx + lines * shi, yy = tmpy + lines * chi, tmpsize = string_width_ext_line(toString(vstr),w,lines);
         } else {
           fontglyph g = findGlyph(fnt, character);
           if (character == ' ' or g.empty()) {
@@ -999,7 +1000,7 @@ void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs
             }
 
             if (width+tw >= w && w != -1)
-            lines += 1, xx = tmpx + lines * shi, yy = tmpy + lines * chi, width = 0, tmpsize = string_width_ext_line(str,w,lines);
+            lines += 1, xx = tmpx + lines * shi, yy = tmpy + lines * chi, width = 0, tmpsize = string_width_ext_line(toString(vstr),w,lines);
           } else {
             wi = g.x2-g.x;
             const gs_scalar lx = xx + g.y * svy;
@@ -1024,7 +1025,7 @@ void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs
         }
       }
     } else {
-      tmpsize = string_width_ext_line(str,w,0);
+      tmpsize = string_width_ext_line(toString(vstr),w,0);
       if (halign == fa_center)
         xx = tmpx-tmpsize/2 * cvx, yy = tmpy+tmpsize/2 * svx;
       else
@@ -1034,13 +1035,13 @@ void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          lines += 1, tmpsize = string_width_ext_line(str,w,lines), i += str[i+1] == '\n', width = 0;
+          lines += 1, tmpsize = string_width_ext_line(toString(vstr),w,lines), i += str[i+1] == '\n', width = 0;
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
             xx = tmpx-tmpsize * cvx + lines * shi, yy = tmpy+tmpsize * svx + lines * chi;
         } else if (character == '\n') {
-          lines += 1, tmpsize = string_width_ext_line(str,w,lines), width = 0;
+          lines += 1, tmpsize = string_width_ext_line(toString(vstr),w,lines), width = 0;
           if (halign == fa_center)
             xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
           else
@@ -1061,7 +1062,7 @@ void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs
             }
 
             if (width+tw >= w && w != -1){
-            lines += 1, tmpsize = string_width_ext_line(str,w,lines);
+            lines += 1, tmpsize = string_width_ext_line(toString(vstr),w,lines);
             if (halign == fa_center)
               xx = tmpx-tmpsize/2 * cvx + lines * shi, yy = tmpy+tmpsize/2 * svx + lines * chi;
             else
@@ -1095,13 +1096,13 @@ void draw_text_ext_transformed_color(gs_scalar x, gs_scalar y, evariant vstr, gs
 
 void draw_text_color(gs_scalar x, gs_scalar y,evariant vstr,int c1,int c2,int c3,int c4,gs_scalar a)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
   float slen = get_space_width(fnt);
-  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y +fnt.yoffset - string_height(str)/2 : y + fnt.yoffset - string_height(str);
+  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y +fnt.yoffset - string_height(toString(vstr))/2 : y + fnt.yoffset - string_height(toString(vstr));
   int hcol1 = c1, hcol2 = c1, hcol3 = c3, hcol4 = c4,  line = 0;
-  gs_scalar tx1, tx2, sw = (gs_scalar)string_width_line(str, line);
+  gs_scalar tx1, tx2, sw = (gs_scalar)string_width_line(toString(vstr), line);
   if (halign == fa_left){
       gs_scalar xx = x;
       for (size_t i = 0; i < str.length(); i++)
@@ -1110,11 +1111,11 @@ void draw_text_color(gs_scalar x, gs_scalar y,evariant vstr,int c1,int c2,int c3
         if (character == '\r') {
           xx = x, yy += fnt.height, i += str[i+1] == '\n';
           line += 1;
-          sw = (gs_scalar)string_width_line(str, line);
+          sw = (gs_scalar)string_width_line(toString(vstr), line);
         } else if (character == '\n') {
           xx = x, yy += fnt.height;
           line += 1;
-          sw = (gs_scalar)string_width_line(str, line);
+          sw = (gs_scalar)string_width_line(toString(vstr), line);
         } else {
           fontglyph g = findGlyph(fnt, character);
           if (character == ' ' or g.empty()) {
@@ -1144,9 +1145,9 @@ void draw_text_color(gs_scalar x, gs_scalar y,evariant vstr,int c1,int c2,int c3
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
           yy += fnt.height, i += str[i+1] == '\n', line += 1,
-          sw = (gs_scalar)string_width_line(str, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
+          sw = (gs_scalar)string_width_line(toString(vstr), line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
         } else if (character == '\n') {
-          yy += fnt.height, line += 1, sw = (gs_scalar)string_width_line(str, line),
+          yy += fnt.height, line += 1, sw = (gs_scalar)string_width_line(toString(vstr), line),
           xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
         } else {
           fontglyph g = findGlyph(fnt, character);
@@ -1175,11 +1176,11 @@ void draw_text_color(gs_scalar x, gs_scalar y,evariant vstr,int c1,int c2,int c3
 
 void draw_text_ext_color(gs_scalar x, gs_scalar y,evariant vstr,gs_scalar sep, gs_scalar w, int c1,int c2,int c3,int c4, gs_scalar a)
 {
-  string str = toString(vstr);
+  string str = enigma::gml_display_text(toString(vstr));
   const SpriteFont& fnt = sprite_fonts[currentfont];
 
-  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y + fnt.yoffset - string_height_ext(str,sep,w)/2 : y + fnt.yoffset - string_height_ext(str,sep,w);
-  gs_scalar width = 0, tw = 0, line = 0, sw = string_width_ext_line(str, w, line);
+  gs_scalar yy = valign == fa_top ? y+fnt.yoffset : valign == fa_middle ? y + fnt.yoffset - string_height_ext(toString(vstr),sep,w)/2 : y + fnt.yoffset - string_height_ext(toString(vstr),sep,w);
+  gs_scalar width = 0, tw = 0, line = 0, sw = string_width_ext_line(toString(vstr), w, line);
   float slen = get_space_width(fnt);
   int hcol1 = c1, hcol2 = c1, hcol3 = c3, hcol4 = c4;
   if (halign == fa_left){
@@ -1188,9 +1189,9 @@ void draw_text_ext_color(gs_scalar x, gs_scalar y,evariant vstr,gs_scalar sep, g
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          xx = x, yy +=  (sep+2 ? fnt.height : sep), i += str[i+1] == '\n',  width = 0, line += 1, sw = string_width_ext_line(str, w, line);
+          xx = x, yy +=  (sep+2 ? fnt.height : sep), i += str[i+1] == '\n',  width = 0, line += 1, sw = string_width_ext_line(toString(vstr), w, line);
         } else if (character == '\n') {
-          xx = x, yy += (sep+2 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(str, w, line);
+          xx = x, yy += (sep+2 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(toString(vstr), w, line);
         } else {
           fontglyph g = findGlyph(fnt, character);
           if (character == ' ' or g.empty()) {
@@ -1207,7 +1208,7 @@ void draw_text_ext_color(gs_scalar x, gs_scalar y,evariant vstr,gs_scalar sep, g
             }
 
             if (width+tw >= w && w != -1)
-            xx = x, yy += (sep==-1 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(str, w, line);
+            xx = x, yy += (sep==-1 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(toString(vstr), w, line);
           } else {
             hcol1 = merge_color(c1,c2,(gs_scalar)(width)/sw);
             hcol2 = merge_color(c1,c2,(gs_scalar)(width+g.xs)/sw);
@@ -1232,9 +1233,9 @@ void draw_text_ext_color(gs_scalar x, gs_scalar y,evariant vstr,gs_scalar sep, g
       {
         uint32_t character = getUnicodeCharacter(str, i);
         if (character == '\r') {
-          yy +=  (sep+2 ? fnt.height : sep), i += str[i+1] == '\n',  width = 0, line += 1, sw = string_width_ext_line(str, w, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
+          yy +=  (sep+2 ? fnt.height : sep), i += str[i+1] == '\n',  width = 0, line += 1, sw = string_width_ext_line(toString(vstr), w, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
         } else if (character == '\n') {
-          yy += (sep+2 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(str, w, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
+          yy += (sep+2 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(toString(vstr), w, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
         } else {
           fontglyph g = findGlyph(fnt, character);
           if (character == ' ' or g.empty()) {
@@ -1248,7 +1249,7 @@ void draw_text_ext_color(gs_scalar x, gs_scalar y,evariant vstr,gs_scalar sep, g
               tw += (!g.empty() ? g.xs : slen);
             }
             if (width+tw >= w && w != -1)
-            yy += (sep==-1 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(str, w, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
+            yy += (sep==-1 ? fnt.height : sep), width = 0, line += 1, sw = string_width_ext_line(toString(vstr), w, line), xx = halign == fa_center ? x-sw/2 : x-sw, tmpx = xx;
           } else {
           hcol1 = merge_color(c1,c2,(gs_scalar)(width)/sw);
             hcol2 = merge_color(c1,c2,(gs_scalar)(width+g.xs)/sw);
