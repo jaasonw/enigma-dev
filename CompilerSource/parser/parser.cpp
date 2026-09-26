@@ -275,7 +275,10 @@ namespace {
 int make_hash(const lexpair& lp, ParsedCode* pev) {
   if (!is_literal(lp)) return -1;
   if (is_integer(lp)) return atol(lp.code.c_str());
-  if (is_float(lp)) return int(atof(lp.code.c_str()) * 65536);
+  if (is_float(lp)) {
+    const double value = atof(lp.code.c_str());
+    return value == int(value) ? int(value) : int(value * 65536);
+  }
 
   // Now we assume it's a string and apply a simple hash
   int r = 0;
@@ -813,15 +816,11 @@ int parser_secondary(CompileState &state, ParsedCode *parsed_code) {
           strs_this_statement++;
         pos++;
       }
-      int handicap = 0;
-      size_t ci = 0;
-      for (; ci < cases.size(); ci++)
-        if (!is_integer(cases[ci]))
-        { handicap = 1; break; }
-      if (handicap == 1)
-        for (; ci < cases.size(); ci++)
-          if (!is_literal(cases[ci]))
-          { handicap = 2; break; }
+      // The integer switch path truncates real values before matching cases.
+      int handicap = 1;
+      for (size_t ci = 0; ci < cases.size(); ci++)
+        if (!is_literal(cases[ci]))
+        { handicap = 2; break; }
       if (handicap)
       {
         int delta = 0;
