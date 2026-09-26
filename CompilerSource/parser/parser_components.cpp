@@ -30,6 +30,10 @@
 #include <string>
 #include <iostream>
 #include <cstdio>
+#include <cstring>
+#include <cctype>
+#include <set>
+#include <vector>
 using namespace std;
 #include "darray.h"
 
@@ -831,8 +835,230 @@ static inline string string_settings_escape(string n)
   return n;
 }
 
+// GML evaluates operands and call arguments left to right. C++ leaves the order
+// unspecified and GCC goes right to left, so read(b) + read(b) consumed a stream
+// backwards. Where two or more operands of one expression (or arguments of one
+// call) have side effects, they are bound in order in an inlined lambda. String
+// literals are bound too, since print_to_file consumes them in text order.
+namespace {
+
+struct EvalOrder {
+  struct Span { pt s, e; bool fx, str; };
+  struct Group { pt close; bool fx, str; };
+
+  string &code, &synt;
+  unsigned temps = 0;
+  bool failed = false;
+
+  bool punct(pt p) const {
+    const char c = code[p];
+    return synt[p] == c && ispunct((unsigned char) c) && c != '"' && c != '\'';
+  }
+
+  size_t op_len(pt p) const {
+    static const char *const ops[] = {"<<=", ">>=", "<<", ">>", "<=", ">=", "==", "!=", "&&", "||", "++", "--",
+                                      "->", "::", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^="};
+    for (const char *op : ops) {
+      const size_t n = strlen(op);
+      if (code.compare(p, n, op) == 0 && synt.compare(p, n, op) == 0) return n;
+    }
+    return 1;
+  }
+
+  pt word_end(pt p) const {
+    const char s = synt[p];
+    if (s == '"' || s == '\'') return p + 1;
+    while (p < code.length() && synt[p] == s && code[p] != ' ') p++;
+    return p;
+  }
+
+  static bool ordered_op(const string &op) {
+    static const set<string> ops = {"+", "-", "*", "/", "%", "<<", ">>", "<", ">", "<=", ">=", "==", "!=", "&", "|", "^"};
+    return ops.count(op);
+  }
+
+  // Accessors the parser generates for variables read, not called.
+  static bool pure_callee(string name) {
+    name.erase(0, name.find_first_not_of(": "));
+    return name.compare(0, 18, "enigma::varaccess_") == 0 || name.compare(0, 16, "enigma::glaccess") == 0 ||
+           name == "enigma::varargs";
+  }
+
+  pt replace(pt s, pt e, const string &c, const string &y) {
+    code.replace(s, e - s, c);
+    synt.replace(s, e - s, y);
+    return s + c.length();
+  }
+
+  // Binds each piece that has side effects or strings to a temporary, in order,
+  // then evaluates `head` + the pieces joined by the text between them.
+  pt bind_in_order(pt s, pt e, const string &head_c, const string &head_s, const vector<Span> &pieces,
+                   const string &tail_c, const string &tail_s) {
+    string c = "[&]{", y = "[&]L", rc = "return " + head_c, ry = "ttttttt" + head_s;
+    for (size_t i = 0; i < pieces.size(); i++) {
+      const Span &p = pieces[i];
+      const string pc = code.substr(p.s, p.e - p.s), py = synt.substr(p.s, p.e - p.s);
+      if (p.fx || p.str) {
+        const string name = "enigma_ord" + to_string(temps++);
+        c += "auto " + name + "=" + pc + ";";
+        y += "tttt " + string(name.length(), 'n') + "=" + py + "L";
+        rc += name;
+        ry += string(name.length(), 'n');
+      } else {
+        rc += pc;
+        ry += py;
+      }
+      if (i + 1 < pieces.size()) {
+        rc += code.substr(p.e, pieces[i + 1].s - p.e);
+        ry += synt.substr(p.e, pieces[i + 1].s - p.e);
+      }
+    }
+    return replace(s, e, c + rc + tail_c + ";}()", y + ry + tail_s + "LL()");
+  }
+
+  static size_t count_fx(const vector<Span> &spans) {
+    size_t n = 0;
+    for (const Span &sp : spans) n += sp.fx;
+    return n;
+  }
+
+  // Scans to `closer` (0: end of code), rewriting expressions inside, and
+  // returns the closer's position. Collects call arguments into `args`.
+  Group scan(pt pos, char closer, vector<Span> *args) {
+    Group g{pos, false, false};
+    vector<Span> operands;
+    Span cur{pos, pos, false, false}, arg{pos, pos, false, false};
+    bool have = false, after_operand = false, last_name = false, arg_has = false;
+    pt name_s = 0, scope_s = string::npos;  // scope_s: a leading :: on the next name
+
+    auto take = [&](pt s, pt e) {
+      if (!have) cur = {s, e, false, false};
+      have = arg_has = true;
+      cur.e = e;
+    };
+    // Ends an expression at a lower-precedence token; returns the position shift.
+    auto end_region = [&](pt at) -> pt {
+      if (have) operands.push_back(cur);
+      have = after_operand = last_name = false;
+      pt shift = 0;
+      if (operands.size() >= 2 && count_fx(operands) >= 2) {
+        const pt s = operands.front().s, e = operands.back().e;
+        shift = bind_in_order(s, e, "", "", operands, "", "") - e;
+      }
+      for (const Span &o : operands) {
+        g.fx |= o.fx, g.str |= o.str;
+        arg.fx |= o.fx, arg.str |= o.str;
+      }
+      operands.clear();
+      return at + shift;
+    };
+
+    while (pos < code.length() && !failed) {
+      if (code[pos] == ' ') { pos++; continue; }
+      if (closer && code[pos] == closer && synt[pos] == closer) {
+        pos = end_region(pos);
+        if (args && arg_has) arg.e = pos, args->push_back(arg);
+        g.close = pos;
+        return g;
+      }
+      if (!punct(pos)) {
+        const char s = synt[pos];
+        const pt e = word_end(pos);
+        pt next = e;
+        while (next < code.length() && code[next] == ' ') next++;
+        if (s == 'X' && code.compare(pos, 2, "::") == 0) {  // global scope the parser puts on script calls
+          take(pos, pos + 2);
+          scope_s = pos;
+          last_name = after_operand = false;
+          pos += 2;
+          continue;
+        }
+        if (s == '@' && after_operand) {  // div, mod
+          operands.push_back(cur);
+          have = after_operand = last_name = false;
+        } else if (s == '!' && !after_operand) {  // not
+          take(pos, e);
+        } else if (s == 'n' || s == 'V' || s == 'c' || s == '0' || s == '"' || s == '\'' ||
+                   (s == 't' && next < code.length() && code[next] == '(')) {
+          take(pos, e);
+          cur.str |= s == '"' || s == '\'';
+          last_name = s == 'n' || s == 'V';
+          if (last_name) name_s = scope_s != string::npos ? scope_s : pos;
+          scope_s = string::npos;
+          after_operand = true;
+        } else {
+          const pt len = e - pos;
+          pos = end_region(pos) + len;
+          continue;
+        }
+        pos = e;
+        continue;
+      }
+      const size_t n = op_len(pos);
+      const string op = code.substr(pos, n);
+      if (op == "(" || op == "[") {
+        const bool call = op == "(" && last_name && !pure_callee(code.substr(name_s, pos - name_s));
+        if (!have) take(pos, pos);
+        vector<Span> cargs;
+        const Group in = scan(pos + 1, op == "(" ? ')' : ']', call ? &cargs : nullptr);
+        if (failed) break;
+        pt end = in.close + 1;
+        if (call && count_fx(cargs) >= 2) {
+          const string name_c = code.substr(name_s, pos - name_s), name_y = synt.substr(name_s, pos - name_s);
+          end = bind_in_order(name_s, end, name_c + "(", name_y + "(", cargs, ")", ")");
+        }
+        cur.fx |= in.fx || call;
+        cur.str |= in.str;
+        cur.e = end;
+        after_operand = true;
+        last_name = false;
+        pos = end;
+        continue;
+      }
+      if (op == ")" || op == "]") { failed = true; break; }
+      last_name = false;
+      scope_s = op == "::" ? pos : string::npos;
+      if (op == "++" || op == "--") {
+        take(pos, pos + n);
+        cur.fx = true;
+      } else if (op == "." || op == "->" || op == "::") {
+        take(pos, pos + n);
+        after_operand = false;
+      } else if (after_operand && ordered_op(op)) {
+        operands.push_back(cur);
+        have = after_operand = false;
+      } else if (!after_operand && (ordered_op(op) || op == "!" || op == "~")) {
+        take(pos, pos + n);  // unary
+      } else {
+        pos = end_region(pos);
+        if (op == "," && args) {
+          arg.e = pos, args->push_back(arg);
+          arg = {pos + 1, pos + 1, false, false};
+          arg_has = false;
+        }
+      }
+      pos += n;
+    }
+    if (closer) failed = true;
+    end_region(pos);
+    g.close = code.length();
+    return g;
+  }
+};
+
+}  // namespace
+
+static void order_evaluation(string &code, string &synt) {
+  if (code.length() != synt.length()) return;
+  const string code0 = code, synt0 = synt;
+  EvalOrder order{code, synt};
+  order.scan(0, 0, nullptr);
+  if (order.failed) code = code0, synt = synt0;
+}
+
 void print_to_file(string code,string synt,const unsigned int strc, const varray<string> &string_in_code,int indentmin_b4,ofstream &of)
 {
+  order_evaluation(code, synt);
   //FILE* of = fopen("/media/HP_PAVILION/Documents and Settings/HP_Owner/Desktop/parseout.txt","w+b");
   FILE* of_ = fopen("/home/josh/Desktop/parseout.txt","ab");
   if (of_) { fprintf(of_,"%s\n%s\n\n\n",code.c_str(), synt.c_str()); fclose(of_); }
