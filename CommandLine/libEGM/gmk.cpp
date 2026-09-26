@@ -581,7 +581,7 @@ int LoadTriggers(Decoder &dec) {
   return 1;
 }
 
-int LoadConstants(Decoder &dec) {
+int LoadConstants(Decoder &dec, buffers::Game *game) {
   int ver = dec.read4();
   if (ver != 800) {
     errStream << "Unsupported GMK Constants version: " << ver << std::endl;
@@ -590,8 +590,9 @@ int LoadConstants(Decoder &dec) {
 
   int no = dec.read4();
   for (int i = 0; i < no; i++) {
-    dec.readStr(); // constant name
-    dec.readStr(); // constant value
+    buffers::Constant *constant = game->add_constants();
+    constant->set_name(dec.readStr());
+    constant->set_value(dec.readStr());
   }
   dec.skip(8); //last changed
 
@@ -1269,6 +1270,9 @@ std::unique_ptr<buffers::Project> GMKFileFormat::LoadProject(const fs::path& fNa
   }
   Decoder dec(in);
 
+  auto proj = std::make_unique<buffers::Project>();
+  buffers::Game *game = proj->mutable_game();
+
   int identifier = dec.read4();
   if (identifier != 1234321) {
     errStream << "Invalid GMK identifier: " << identifier << std::endl;
@@ -1307,7 +1311,7 @@ std::unique_ptr<buffers::Project> GMKFileFormat::LoadProject(const fs::path& fNa
 
   if (ver >= 800) {
     if (!LoadTriggers(dec)) return nullptr;
-    if (!LoadConstants(dec)) return nullptr;
+    if (!LoadConstants(dec, game)) return nullptr;
   }
 
   for (auto factory : groupFactories) {
