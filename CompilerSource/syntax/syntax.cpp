@@ -32,6 +32,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <algorithm>
 #include <regex>
 #include <set>
 
@@ -296,8 +297,23 @@ namespace syncheck
     vector<std::pair<GmlToken, string>> edits;  // replace span with text
     string hoisted;
     std::set<string> declared;
+    // break/continue outside any loop or switch exit the script, as in GM8.
+    vector<bool> brace_is_loop;
+    bool pending_loop = false;
+    int paren = 0;
     for (size_t k = 0; k < toks.size(); k++) {
       const string t = text(k);
+      if (t == "for" || t == "while" || t == "repeat" || t == "with" || t == "switch" || t == "do") pending_loop = true;
+      else if (t == "(") paren++;
+      else if (t == ")") paren--;
+      else if (t == "{") brace_is_loop.push_back(pending_loop), pending_loop = false;
+      else if (t == "}") { if (!brace_is_loop.empty()) brace_is_loop.pop_back(); }
+      else if (t == ";" && paren == 0) pending_loop = false;
+      else if ((t == "break" || t == "continue") && !pending_loop &&
+               std::find(brace_is_loop.begin(), brace_is_loop.end(), true) == brace_is_loop.end()) {
+        edits.push_back({toks[k], "exit"});
+        continue;
+      }
       const bool stmt_start = k == 0 || text(k - 1) == ";" || text(k - 1) == "{" || text(k - 1) == "}" ||
           text(k - 1) == ")" || text(k - 1) == ":" || text(k - 1) == "else" || code.find('\n', toks[k - 1].pos) < toks[k].pos;
       if (t == "var" && stmt_start) {
