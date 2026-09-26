@@ -402,6 +402,9 @@ int parser_reinterpret(string &code,string &synt)
     }
     else if (synt[pos] == 'V')
     {
+      // The scan starts at 1, so a call at the start of the code is found
+      // at its second character.
+      if (pos == 1 and synt[0] == 'V') pos = 0;
       const pt spos = pos;
       while ((synt[pos] = 'n', synt[++pos] == 'V'));
       jdi::definition_function *d = (jdi::definition_function*)current_language->look_up(code.substr(spos,pos-spos));
