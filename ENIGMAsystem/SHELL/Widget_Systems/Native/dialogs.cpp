@@ -29,6 +29,7 @@ SOFTWARE.
 #include "Platforms/General/PFwindow.h"
 #include "Platforms/General/PFmain.h"
 #include "libdlgmod.h"
+#include "Universal_System/estring.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -82,52 +83,52 @@ int show_debug_message(string errortext, MESSAGE_TYPE type) {
 
 int show_message(const string &message) {
   enigma::widget_system_initialize();
-  return dialog_module::show_message(message);
+  return dialog_module::show_message(enigma::gml_display_text(message));
 }
 
 int show_message_cancelable(std::string str) {
   enigma::widget_system_initialize();
-  return dialog_module::show_message_cancelable(str);
+  return dialog_module::show_message_cancelable(enigma::gml_display_text(str));
 }
 
 bool show_question(std::string str) {
   enigma::widget_system_initialize();
-  return (bool)dialog_module::show_question(str);
+  return (bool)dialog_module::show_question(enigma::gml_display_text(str));
 }
 
 int show_question_cancelable(std::string str) {
   enigma::widget_system_initialize();
-  return dialog_module::show_question_cancelable(str);
+  return dialog_module::show_question_cancelable(enigma::gml_display_text(str));
 }
 
 int show_attempt(std::string str) {
   enigma::widget_system_initialize();
-  return dialog_module::show_attempt(str);
+  return dialog_module::show_attempt(enigma::gml_display_text(str));
 }
 
 std::string get_string(std::string str, std::string def) {
   enigma::widget_system_initialize();
-  return dialog_module::get_string(str, def);
+  return dialog_module::get_string(enigma::gml_display_text(str), def);
 }
 
 std::string get_password(std::string str, std::string def) {
   enigma::widget_system_initialize();
-  return dialog_module::get_password(str, def);
+  return dialog_module::get_password(enigma::gml_display_text(str), def);
 }
 
 double get_number(std::string str, double def) {
   enigma::widget_system_initialize();
-  return dialog_module::get_integer(str, def);
+  return dialog_module::get_integer(enigma::gml_display_text(str), def);
 }
 
 double get_integer(std::string str, double def) {
   enigma::widget_system_initialize();
-  return dialog_module::get_integer(str, def);
+  return dialog_module::get_integer(enigma::gml_display_text(str), def);
 }
 
 double get_passcode(std::string str, double def) {
   enigma::widget_system_initialize();
-  return dialog_module::get_passcode(str, def);
+  return dialog_module::get_passcode(enigma::gml_display_text(str), def);
 }
 
 std::string get_open_filename(std::string filter, std::string fname) {
@@ -238,6 +239,7 @@ bool widget_get_canceled() {
 // libdlgmod button ids: 0 Abort, 1 Ignore, 2 OK, 3 Cancel, 4 Yes, 5 No, 6 Retry.
 int show_message_ext(string message, string but1, string but2, string but3) {
   enigma::widget_system_initialize();
+  message = enigma::gml_display_text(message);
   enum { kOk = 2, kCancel = 3, kYes = 4, kNo = 5 };
   const string ok = dialog_module::widget_get_button_name(kOk),
       yes = dialog_module::widget_get_button_name(kYes),
