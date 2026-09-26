@@ -89,7 +89,8 @@ OptionsParser::OptionsParser() : _desc("Options")
   std::string def_platform, def_workdir, def_compiler;
   #if CURRENT_PLATFORM_ID == OS_WINDOWS
     def_platform = "Win32";
-    def_workdir = std::string(getenv("LOCALAPPDATA")) + "/ENIGMA/";
+    const char* local_app_data = getenv("LOCALAPPDATA");
+    def_workdir = std::string(local_app_data ? local_app_data : ".") + "/ENIGMA/";
     def_compiler = "gcc";
   #elif CURRENT_PLATFORM_ID ==  OS_MACOSX
     def_platform = "Cocoa";
