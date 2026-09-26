@@ -229,6 +229,8 @@ namespace enigma
       view_angle[i] = 0;
     }
 
+    enigma_user::window_default(false);
+
     enigma_user::io_clear();
     // we only initialize the screen and clear the window color during game start
     // NOTE: no version of GM has EVER reset the drawing color or alpha during room transition
