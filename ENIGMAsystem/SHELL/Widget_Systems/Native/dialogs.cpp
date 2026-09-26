@@ -30,6 +30,9 @@ SOFTWARE.
 #include "Platforms/General/PFmain.h"
 #include "libdlgmod.h"
 
+#include <cstdio>
+#include <cstdlib>
+
 using std::string;
 
 namespace enigma {
@@ -230,6 +233,68 @@ void widget_set_button_name(int type, std::string name) {
 bool widget_get_canceled() {
   enigma::widget_system_initialize();
   return dialog_module::widget_get_canceled();
+}
+
+// libdlgmod button ids: 0 Abort, 1 Ignore, 2 OK, 3 Cancel, 4 Yes, 5 No, 6 Retry.
+int show_message_ext(string message, string but1, string but2, string but3) {
+  enigma::widget_system_initialize();
+  enum { kOk = 2, kCancel = 3, kYes = 4, kNo = 5 };
+  const string ok = dialog_module::widget_get_button_name(kOk),
+      yes = dialog_module::widget_get_button_name(kYes),
+      no = dialog_module::widget_get_button_name(kNo),
+      cancel = dialog_module::widget_get_button_name(kCancel);
+  int result;
+  if (but2.empty() && but3.empty()) {
+    dialog_module::widget_set_button_name(kOk, but1.empty() ? ok : but1);
+    dialog_module::show_message(message);
+    result = 1;
+  } else {
+    dialog_module::widget_set_button_name(kYes, but1);
+    dialog_module::widget_set_button_name(kNo, but2);
+    if (but3.empty()) {
+      result = dialog_module::show_question(message) ? 1 : 2;
+    } else {
+      dialog_module::widget_set_button_name(kCancel, but3);
+      const int r = dialog_module::show_question_cancelable(message);
+      result = r == 1 ? 1 : r == 0 ? 2 : 3;
+    }
+  }
+  dialog_module::widget_set_button_name(kOk, ok);
+  dialog_module::widget_set_button_name(kYes, yes);
+  dialog_module::widget_set_button_name(kNo, no);
+  dialog_module::widget_set_button_name(kCancel, cancel);
+  return result;
+}
+
+// libdlgmod has no list dialog: use zenity where available, else keep def.
+double show_menu(string str, double def) {
+#ifdef _WIN32
+  return def;
+#else
+  string cmd = "zenity --list --hide-header --column=i --column=t --hide-column=1 --print-column=1";
+  size_t start = 0;
+  for (int i = 0;; i++) {
+    const size_t bar = str.find('|', start);
+    string item = str.substr(start, bar - start), quoted;
+    for (char c : item) {
+      if (c == '\'') quoted += "'\\''"; else quoted += c;
+    }
+    cmd += " " + std::to_string(i) + " '" + quoted + "'";
+    if (bar == string::npos) break;
+    start = bar + 1;
+  }
+  cmd += " 2>/dev/null";
+  FILE *p = popen(cmd.c_str(), "r");
+  if (!p) return def;
+  char buf[32] = {};
+  const bool got = fgets(buf, sizeof buf, p) != nullptr;
+  pclose(p);
+  return got && buf[0] >= '0' && buf[0] <= '9' ? strtod(buf, nullptr) : def;
+#endif
+}
+
+double show_menu_pos(double, double, string str, double def) {
+  return show_menu(str, def);
 }
 
 } // namespace enigma_user
