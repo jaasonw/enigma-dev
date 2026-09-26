@@ -282,6 +282,8 @@ namespace syncheck
     return is_gml_name(next) || next == ":" || next == "->" || (word == "template" && next == "<");
   }
 
+  // GML's var is function-scoped. Move plain `var a, b;` declarations to the
+  // top so C++ jumps (switch cases, goto) never cross their initialization.
   static string gml_compat_prepass(const string &code) {
     static const std::set<string> words = {
       "char", "alignas", "asm", "class", "concept", "explicit", "export", "friend",
@@ -292,13 +294,38 @@ namespace syncheck
     auto text = [&](size_t k) { return k < toks.size() ? code.substr(toks[k].pos, toks[k].len) : string(); };
 
     vector<std::pair<GmlToken, string>> edits;  // replace span with text
+    string hoisted;
+    std::set<string> declared;
     for (size_t k = 0; k < toks.size(); k++) {
       const string t = text(k);
+      const bool stmt_start = k == 0 || text(k - 1) == ";" || text(k - 1) == "{" || text(k - 1) == "}" ||
+          text(k - 1) == ")" || text(k - 1) == ":" || text(k - 1) == "else" || code.find('\n', toks[k - 1].pos) < toks[k].pos;
+      if (t == "var" && stmt_start) {
+        size_t e = k + 1;
+        vector<string> names;
+        while (is_gml_name(text(e))) {
+          names.push_back(text(e));
+          if (text(e + 1) != ",") break;
+          e += 2;
+        }
+        const size_t last = e;
+        const bool plain = !names.empty() && (text(last + 1) == ";" ||
+            code.find('\n', toks[last].pos) < (last + 1 < toks.size() ? toks[last + 1].pos : code.size()));
+        if (plain) {
+          const size_t end_tok = text(last + 1) == ";" ? last + 1 : last;
+          edits.push_back({{toks[k].pos, toks[end_tok].pos + toks[end_tok].len - toks[k].pos}, ""});
+          for (const string &n : names)
+            if (declared.insert(n).second)
+              hoisted += (hoisted.empty() ? "var " : ", ") + (words.count(n) ? "gml_" + n : n);
+          k = end_tok;
+          continue;
+        }
+      }
       if (words.count(t) && !keep_cpp_word(t, k > 1 ? text(k - 2) : "", k ? text(k - 1) : "", text(k + 1)))
         edits.push_back({toks[k], "gml_" + t});
     }
     if (edits.empty()) return code;
-    string out;
+    string out = hoisted.empty() ? "" : hoisted + ";\n";
     size_t at = 0;
     for (const auto &ed : edits) {
       out.append(code, at, ed.first.pos - at);
