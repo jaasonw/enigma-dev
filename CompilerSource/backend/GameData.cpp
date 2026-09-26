@@ -595,5 +595,5 @@ GameData::GameData(deprecated::JavaStruct::EnigmaStruct *es,
 
 GameData::GameData(const buffers::Project &proj, const EventData* /*events*/):
     filename("") {
-  FlattenProto(proj, this);
+  transfer_error = FlattenProto(proj, this);
 }

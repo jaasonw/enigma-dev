@@ -184,6 +184,7 @@ DLLEXPORT int compileEGMf(deprecated::JavaStruct::EnigmaStruct *es, const char* 
 
 DLLEXPORT int compileProto(const buffers::Project *proj, const char* exe_filename, int mode) {
   GameData gameData(*proj, &current_language->event_data());
+  if (gameData.transfer_error) return gameData.transfer_error;
   return current_language->compile(gameData, exe_filename, mode);
 }
 
@@ -806,18 +807,19 @@ int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) 
   idpr("Adding Sprites",90);
 
   res = current_language->module_write_sprites(game, gameModule);
+  if (res) { fclose(gameModule); return res; }
   irrr();
 
   edbg << "Finalized sprites." << flushl;
   idpr("Adding Sounds",93);
 
-  current_language->module_write_sounds(game, gameModule);
+  if ((res = current_language->module_write_sounds(game, gameModule))) { fclose(gameModule); return res; }
 
-  current_language->module_write_backgrounds(game, gameModule);
+  if ((res = current_language->module_write_backgrounds(game, gameModule))) { fclose(gameModule); return res; }
 
-  current_language->module_write_fonts(game, gameModule);
+  if ((res = current_language->module_write_fonts(game, gameModule))) { fclose(gameModule); return res; }
 
-  current_language->module_write_paths(game, gameModule);
+  if ((res = current_language->module_write_paths(game, gameModule))) { fclose(gameModule); return res; }
 
   // Close the game module; we're done adding resources
   idpr("Closing game module and running if requested.",99);
