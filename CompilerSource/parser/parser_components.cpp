@@ -34,6 +34,7 @@
 #include <cctype>
 #include <set>
 #include <vector>
+#include <algorithm>
 using namespace std;
 #include "darray.h"
 
@@ -1041,6 +1042,51 @@ struct EvalOrder {
 
 }  // namespace
 
+// GML groups && and || left to right. Parenthesize prefixes that C++ would
+// regroup when an && follows an || in the same expression.
+static void group_logical_operators(string &code, string &synt) {
+  if (code.size() != synt.size()) return;
+  struct Scope { size_t start; bool saw_or; };
+  vector<Scope> scopes{{0, false}};
+  vector<pair<size_t, char>> inserts;
+  for (size_t i = 0; i < code.size(); ++i) {
+    if (code.compare(i, 6, "return") == 0 && synt.compare(i, 6, "pppppp") == 0) {
+      scopes.back() = {i + 6, false};
+      i += 5;
+      continue;
+    }
+    if (code[i] != synt[i]) continue;
+    const char c = code[i];
+    if (c == '(' || c == '[' || c == '{') {
+      scopes.push_back({i + 1, false});
+    } else if (c == ')' || c == ']' || c == '}') {
+      if (scopes.size() > 1) scopes.pop_back();
+    } else if (i + 1 < code.size() && code[i + 1] == c && synt[i + 1] == c && c == '|') {
+      scopes.back().saw_or = true;
+      ++i;
+    } else if (i + 1 < code.size() && code[i + 1] == c && synt[i + 1] == c && c == '&') {
+      if (scopes.back().saw_or) {
+        inserts.emplace_back(scopes.back().start, '(');
+        inserts.emplace_back(i, ')');
+        scopes.back().saw_or = false;
+      }
+      ++i;
+    } else if (c == ';' || c == ',' || c == '?' ||
+               (c == ':' && (i == 0 || code[i - 1] != ':') &&
+                (i + 1 == code.size() || code[i + 1] != ':')) ||
+               (c == '=' && (i == 0 || code[i - 1] != '=') &&
+                (i + 1 == code.size() || code[i + 1] != '='))) {
+      scopes.back() = {i + 1, false};
+    }
+  }
+  stable_sort(inserts.begin(), inserts.end(),
+              [](const auto &a, const auto &b) { return a.first > b.first; });
+  for (const auto &insert : inserts) {
+    code.insert(insert.first, 1, insert.second);
+    synt.insert(insert.first, 1, insert.second);
+  }
+}
+
 static void order_evaluation(string &code, string &synt) {
   if (code.length() != synt.length()) return;
   const string code0 = code, synt0 = synt;
@@ -1051,6 +1097,7 @@ static void order_evaluation(string &code, string &synt) {
 
 void print_to_file(string code,string synt,const unsigned int strc, const varray<string> &string_in_code,int indentmin_b4,ofstream &of)
 {
+  group_logical_operators(code, synt);
   order_evaluation(code, synt);
   //FILE* of = fopen("/media/HP_PAVILION/Documents and Settings/HP_Owner/Desktop/parseout.txt","w+b");
   FILE* of_ = fopen("/home/josh/Desktop/parseout.txt","ab");
