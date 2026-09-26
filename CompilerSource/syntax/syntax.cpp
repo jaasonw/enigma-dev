@@ -32,6 +32,7 @@
 #include <cstdlib>
 #include <vector>
 #include <iostream>
+#include <regex>
 
 #include "settings.h"
 #include "general/parse_basics_old.h"
@@ -206,8 +207,27 @@ namespace syncheck
   #define superPos (mymacroind ? mymacrostack[0].pos : pos)
   #define ptrace() for (unsigned i = 0; i < lex.size(); i++) cout << (string)lex[i] << "\t\t" << endl
   #define lexlast (lex.size()-1)
+  // variable_*_exists with a literal name reads the variable through the
+  // dot-access path, which declares it; unset reads as undefined.
+  static string lower_variable_exists(const string &code) {
+    if (code.find("variable_") == string::npos) return code;
+    static const std::regex call(
+        R"(\bvariable_(local|global)_exists\s*\(\s*(["'])([A-Za-z_]\w*)\2\s*\))");
+    string out;
+    auto last = code.cbegin();
+    for (std::sregex_iterator it(code.begin(), code.end(), call), end; it != end; ++it) {
+      const auto &m = *it;
+      out.append(last, m[0].first);
+      out += "(!is_undefined(" + string(m[1] == "local" ? "self" : "global") + "." + m[3].str() + "))";
+      last = m[0].second;
+    }
+    out.append(last, code.cend());
+    return out;
+  }
+
   int syntaxcheck(string code, string& newcode)
   {
+    code = lower_variable_exists(code);
     syerr = "No error";
     if (code.empty()) {
       newcode = code;
