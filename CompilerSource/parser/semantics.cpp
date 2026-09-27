@@ -206,6 +206,10 @@ bool SemanticAnnotator::VisitWithStatement(AST::WithStatement &node) {
 
 bool SemanticAnnotator::VisitFunctionCallExpression(AST::FunctionCallExpression &node) {
   validate_call(node);
+  if (auto call = node.VariableNameCall(); call && call->first == "variable_global_exists" &&
+                                           globalvars_ && globalvars_->count(call->second)) {
+    node.names_declared_globalvar = true;
+  }
   if (gml_equals_ && node.arguments.size() > 1) {
     std::vector<AST::Node *> arguments;
     for (auto &arg : node.arguments) arguments.push_back(arg.get());
