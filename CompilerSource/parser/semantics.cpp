@@ -18,6 +18,7 @@
 #include "semantics.h"
 
 #include "object_storage.h"
+#include "parsing/precedence.h"
 
 namespace enigma::parsing {
 
@@ -90,7 +91,55 @@ bool SemanticAnnotator::VisitScopeAccess(AST::ScopeAccess &node) {
   return true;
 }
 
+// Whether `op` binds looser than == (&& || ^^, and C++'s & | ^), so a
+// value-position = parsed above it must move below it.
+bool SemanticAnnotator::looser_than_equality(TokenType op) const {
+  if (op == TT_EQUALS || op == TT_ASSOP || op == TT_COMMA) return false;
+  const bool gml = frontend_ && frontend_->compatibility_opts().use_gml_precedence;
+  auto find = [&](TokenType t) -> const OperatorPrecedence * {
+    if (gml) if (auto it = Precedence::kGmlBinaryPrec.find(t); it != Precedence::kGmlBinaryPrec.end())
+      return &it->second;
+    auto it = Precedence::kBinaryPrec.find(t);
+    return it == Precedence::kBinaryPrec.end() ? nullptr : &it->second;
+  };
+  const OperatorPrecedence *p = find(op);  // a[i] and other non-binary operators: tight
+  return p && p->precedence > find(TT_EQUALTO)->precedence;
+}
+
 bool SemanticAnnotator::VisitBinaryExpression(AST::BinaryExpression &node) {
+  // GML's = compares except at statement position, at equality precedence;
+  // the parser grouped it at assignment precedence, so `a and b = c` came out
+  // as (a and b) = c. Push the = below a looser operand: (L = (c op d)) becomes
+  // ((L = c) op d), and ((a op b) = R) becomes (a op (b = R)). The moved =
+  // is visited, and fixed further, as a child. The parser already turns an if
+  // condition's root = into == (TT_EQUALTO) with the same grouping; a written
+  // == never has an unparenthesized looser operand, so fix those too.
+  if ((gml_equals_ && node.operation.type == TT_EQUALS && !statement_equals_.count(&node)) ||
+      node.operation.type == TT_EQUALTO) {
+    auto loose = [&](const AST::PNode &n) {
+      return n->type == AST::NodeType::BINARY_EXPRESSION &&
+             looser_than_equality(n->As<AST::BinaryExpression>()->operation.type);
+    };
+    const bool right = loose(node.right);
+    if (right || loose(node.left)) {
+      AST::PNode moved = std::move(right ? node.right : node.left);
+      auto *op = moved->As<AST::BinaryExpression>();
+      if (right) {  // node = (L = (c op d)): moved becomes (L = c), node becomes (moved op d)
+        AST::PNode d = std::move(op->right);
+        op->right = std::move(op->left);
+        op->left = std::move(node.left);
+        node.left = std::move(moved);
+        node.right = std::move(d);
+      } else {  // node = ((a op b) = R): moved becomes (b = R), node becomes (a op moved)
+        AST::PNode a = std::move(op->left);
+        op->left = std::move(op->right);
+        op->right = std::move(node.right);
+        node.right = std::move(moved);
+        node.left = std::move(a);
+      }
+      std::swap(node.operation, op->operation);
+    }
+  }
   // EDL's / is real division regardless of operand types; div is the
   // integer kind. C++ would truncate 1/4 to 0, so mark for lowering.
   if (node.operation.type == TT_SLASH) node.lower_real_division = true;

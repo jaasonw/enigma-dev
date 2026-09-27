@@ -70,6 +70,7 @@ class SemanticAnnotator : public AST::Visitor {
   // that = assigns. Parents visit before children, so the registration is
   // in place before VisitBinaryExpression reaches the node.
   void mark_statement(const AST::PNode &stmt);
+  bool looser_than_equality(TokenType op) const;
 
   ErrorHandler *herr_;
   const LanguageFrontend *frontend_;
