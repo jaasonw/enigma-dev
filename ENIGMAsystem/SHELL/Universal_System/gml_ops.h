@@ -8,6 +8,7 @@
 
 #include <cmath>
 #include <cstdint>
+#include <limits>
 #include <utility>
 
 namespace enigma {
@@ -37,13 +38,22 @@ template <class T> T &&gml_background_index_assigned(T &&v) {
 // GML round(): GM8 rounds half to even (round(0.5) is 0, round(2.5) is 2).
 inline double gml_round(double x) { return gm8_compliance() ? round_half_even(x) : std::round(x); }
 
+// Real to integer without the undefined cast: NaN is 0, and values past the
+// type's range (infinities too) clamp to its ends.
+template <class I> inline I saturate(double x) {
+  if (x != x) return 0;
+  if (x >= (double) std::numeric_limits<I>::max()) return std::numeric_limits<I>::max();
+  if (x <= (double) std::numeric_limits<I>::min()) return std::numeric_limits<I>::min();
+  return (I) x;
+}
+
 // Array index: GM8 rounds it half to even (a[1.5] is a[2]); standard truncates.
-inline int gml_index(double x) { return (int) (gm8_compliance() ? round_half_even(x) : x); }
+inline int gml_index(double x) { return saturate<int>(gm8_compliance() ? round_half_even(x) : x); }
 
 // Real to integer where GML needs one (bitwise operands): GM8 rounds, the
 // standard mode truncates.
 inline int64_t gml_to_int(double x) {
-  return (int64_t) (gm8_compliance() ? round_half_even(x) : x);
+  return saturate<int64_t>(gm8_compliance() ? round_half_even(x) : x);
 }
 
 inline double gml_bitand(double a, double b) { return (double) (gml_to_int(a) & gml_to_int(b)); }
