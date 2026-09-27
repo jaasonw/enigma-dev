@@ -419,7 +419,21 @@ bool AST::CppPrettyPrinter::VisitDeleteExpression(AST::DeleteExpression &node) {
   return true;
 }
 
+namespace {
+// Counts an enclosing break/continue target while its body prints.
+struct TargetScope {
+  int &breaks, &continues;
+  bool loop;
+  TargetScope(int &b, int &c, bool loop) : breaks(b), continues(c), loop(loop) { ++breaks, continues += loop; }
+  ~TargetScope() { --breaks, continues -= loop; }
+};
+}  // namespace
+
 bool AST::CppPrettyPrinter::VisitBreakStatement(AST::BreakStatement &node) {
+  if (!break_targets_ && GmlDialect()) {  // GM8: outside any loop, break exits
+    print("return 0");
+    return true;
+  }
   print("break");
   if (node.count) {
     print(" ");
@@ -429,6 +443,10 @@ bool AST::CppPrettyPrinter::VisitBreakStatement(AST::BreakStatement &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitContinueStatement(AST::ContinueStatement &node) {
+  if (!continue_targets_ && GmlDialect()) {  // GM8: outside any loop, continue exits
+    print("return 0");
+    return true;
+  }
   print("continue");
   if (node.count) {
     print(" ");
@@ -438,6 +456,7 @@ bool AST::CppPrettyPrinter::VisitContinueStatement(AST::ContinueStatement &node)
 }
 
 bool AST::CppPrettyPrinter::VisitWithStatement(AST::WithStatement &node) {
+  TargetScope scope(break_targets_, continue_targets_, true);
   print("with");
   if (node.object->type != AST::NodeType::PARENTHETICAL) {
     print("(");
@@ -1034,6 +1053,7 @@ bool AST::CppPrettyPrinter::VisitIfStatement(AST::IfStatement &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitForLoop(AST::ForLoop &node) {
+  TargetScope scope(break_targets_, continue_targets_, true);
   print("for(");
 
   // Omitted clauses are null.
@@ -1076,25 +1096,42 @@ bool AST::CppPrettyPrinter::VisitDefaultStatement(AST::DefaultStatement &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitSwitchStatement(AST::SwitchStatement &node) {
+  TargetScope scope(break_targets_, continue_targets_, false);
   if (node.lower_gml_switch) {
     // Pick the first matching case by ==, then switch on its index so
     // fallthrough and break keep their meaning.
     print("{ const variant enigma_switch_value = (");
     VISIT_AND_CHECK(node.expression);
     print("); switch (");
+    // GM8 checks labels in order, default included: reaching default matches,
+    // even when a later case would. Otherwise default is the no-match target.
+    const bool ordered_default = Gm8Compliance();
+    auto numbered = [&](const AST::PNode &stmt) {
+      return stmt->type == AST::NodeType::CASE ||
+             (ordered_default && stmt->type == AST::NodeType::DEFAULT);
+    };
     int index = 0;
+    bool reached_default = false;
     for (auto &stmt : node.body->statements) {
-      if (stmt->type != AST::NodeType::CASE) continue;
+      if (!numbered(stmt)) continue;
+      if (stmt->type == AST::NodeType::DEFAULT) {
+        print(std::to_string(++index));
+        reached_default = true;
+        break;
+      }
       print("enigma_switch_value == (");
       VISIT_AND_CHECK(stmt->As<AST::CaseStatement>()->value);
       print(") ? " + std::to_string(++index) + " : ");
     }
-    print("0) { ");
+    if (!reached_default) print("0");
+    print(") { ");
     index = 0;
     for (auto &stmt : node.body->statements) {
-      if (stmt->type == AST::NodeType::CASE) {
+      if (numbered(stmt)) {
         print("case " + std::to_string(++index) + ": ");
-        if (!VisitCodeBlock(*stmt->As<AST::CaseStatement>()->statements)) return false;
+        auto &body = stmt->type == AST::NodeType::CASE ? stmt->As<AST::CaseStatement>()->statements
+                                                       : stmt->As<AST::DefaultStatement>()->statements;
+        if (!VisitCodeBlock(*body)) return false;
         print(" ");
       } else {
         VISIT_AND_CHECK(stmt);
@@ -1114,6 +1151,7 @@ bool AST::CppPrettyPrinter::VisitSwitchStatement(AST::SwitchStatement &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitWhileLoop(AST::WhileLoop &node) {
+  TargetScope scope(break_targets_, continue_targets_, true);
   if (node.kind == AST::WhileLoop::Kind::REPEAT) {
     // Lower `repeat (N) body` to a counted while. The pair is braced so it
     // acts as ONE statement wherever the repeat sits (an unbraced loop or if
@@ -1163,6 +1201,7 @@ bool AST::CppPrettyPrinter::VisitWhileLoop(AST::WhileLoop &node) {
 }
 
 bool AST::CppPrettyPrinter::VisitDoLoop(AST::DoLoop &node) {
+  TargetScope scope(break_targets_, continue_targets_, true);
   print("do");
 
   if (node.body->type != AST::NodeType::BLOCK) {
