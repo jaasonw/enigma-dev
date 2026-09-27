@@ -27,8 +27,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define u_root 0
-
 using std::string;
 
 /* UNIX-ready port of file manipulation */
@@ -93,10 +91,8 @@ string file_find_next() {
     const string fqfn = fff_path + r;
     stat(fqfn.c_str(), &sb);
 
-    if ((sb.st_mode & S_IFDIR and not_attrib & fa_directory)          // Filter out/for directories
-        or (sb.st_uid == u_root and not_attrib & fa_sysfile)          // Filter system files
-    )
-      continue;
+    // POSIX has no system attribute; root ownership is not one.
+    if (sb.st_mode & S_IFDIR and not_attrib & fa_directory) continue;
 
     return r;
   }
