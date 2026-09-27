@@ -815,6 +815,9 @@ class AST {
     // Set while printing a declarator: its identifiers are declared names,
     // never value reads, regardless of what the lowering knows about them.
     bool in_declarator_ = false;
+    // GML code (as opposed to EDL/C++), and GM8 compliance within it.
+    bool GmlDialect() const;
+    bool Gm8Compliance() const;
 
    public:
     CppPrettyPrinter();
