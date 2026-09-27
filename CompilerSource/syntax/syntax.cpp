@@ -37,6 +37,8 @@
 #include <set>
 
 #include "settings.h"
+
+#include "settings.h"
 #include "general/parse_basics_old.h"
 #include "general/macro_integration.h"
 #include "parser/object_storage.h"
@@ -211,6 +213,19 @@ namespace syncheck
   #define lexlast (lex.size()-1)
   // variable_*_exists with a literal name reads the variable through the
   // dot-access path, which declares it; unset reads as undefined.
+  static std::set<string> declared_globalvars;
+  void clear_globalvars() { declared_globalvars.clear(); }
+  void declare_globalvars(const string &code) {
+    static const std::regex decl(R"(\bglobalvar\s+([A-Za-z_]\w*(\s*,\s*[A-Za-z_]\w*)*))");
+    static const std::regex ident(R"([A-Za-z_]\w*)");
+    for (std::sregex_iterator it(code.begin(), code.end(), decl), end; it != end; ++it) {
+      const string names = (*it)[1].str();
+      for (std::sregex_iterator n(names.begin(), names.end(), ident); n != end; ++n)
+        declared_globalvars.insert(n->str());
+    }
+  }
+
+  static string lower_variable_global_set(const string &code);
   static string lower_variable_exists(const string &code) {
     if (code.find("variable_") == string::npos) return code;
     static const std::regex call(
@@ -220,11 +235,35 @@ namespace syncheck
     for (std::sregex_iterator it(code.begin(), code.end(), call), end; it != end; ++it) {
       const auto &m = *it;
       out.append(last, m[0].first);
-      out += "(!is_undefined(" + string(m[1] == "local" ? "self" : "global") + "." + m[3].str() + "))";
+      if (m[1] == "global" && declared_globalvars.count(m[3].str())) out += "(true)";
+      else out += "(!is_undefined(" + string(m[1] == "local" ? "self" : "global") + "." + m[3].str() + "))";
       last = m[0].second;
     }
     out.append(last, code.cend());
-    return out;
+    return lower_variable_global_set(out);
+  }
+
+  // variable_global_set("name", value) with a literal name: (global.name := (value)); := assigns even in parentheses.
+  static string lower_variable_global_set(const string &code) {
+    static const std::regex call(R"(\bvariable_global_set\s*\(\s*(["'])([A-Za-z_]\w*)\1\s*,)");
+    string out;
+    size_t last = 0;
+    for (std::smatch m; std::regex_search(code.begin() + last, code.end(), m, call);) {
+      const size_t start = last + m.position(0), value = start + m.length(0);
+      size_t end = value;
+      for (int depth = 0; end < code.size(); end++) {  // the call's closing parenthesis
+        const char c = code[end];
+        if (c == '"' || c == '\'') end = code.find(c, end + 1);
+        else if (c == '(') depth++;
+        else if (c == ')' && depth-- == 0) break;
+        if (end == string::npos) return out + code.substr(last);
+      }
+      if (end >= code.size()) break;
+      out += code.substr(last, start - last);
+      out += "(global." + m[2].str() + " := (" + code.substr(value, end - value) + "))";
+      last = end + 1;
+    }
+    return out + code.substr(last);
   }
 
   struct GmlToken { size_t pos, len; };
@@ -291,6 +330,13 @@ namespace syncheck
       "namespace", "private", "protected", "public", "register", "requires",
       "static_assert", "struct", "template", "this", "throw", "typeid", "union",
       "using", "virtual"};
+    // GM8 has none of these; its code can use any of them as a name.
+    static const std::set<string> gm8_words = {
+      "auto", "catch", "const", "const_cast", "constexpr", "decltype", "delete", "dynamic_cast",
+      "enum", "extern", "inline", "mutable", "new", "noexcept", "nullptr", "operator",
+      "reinterpret_cast", "sizeof", "static", "static_cast", "try", "typedef", "typename", "volatile"};
+    const bool gm8 = setting::compliance_mode <= setting::COMPL_GM8;
+    auto gm8_word = [&](const string &w) { return gm8 && gm8_words.count(w); };
     const vector<GmlToken> toks = gml_tokens(code);
     auto text = [&](size_t k) { return k < toks.size() ? code.substr(toks[k].pos, toks[k].len) : string(); };
 
@@ -344,12 +390,13 @@ namespace syncheck
           edits.push_back({{toks[k].pos, toks[end_tok].pos + toks[end_tok].len - toks[k].pos}, ""});
           for (const string &n : names)
             if (declared.insert(n).second)
-              hoisted += (hoisted.empty() ? "var " : ", ") + (words.count(n) ? "gml_" + n : n);
+              hoisted += (hoisted.empty() ? "var " : ", ") + (words.count(n) || gm8_word(n) ? "gml_" + n : n);
           k = end_tok;
           continue;
         }
       }
-      if (words.count(t) && !keep_cpp_word(t, k > 1 ? text(k - 2) : "", k ? text(k - 1) : "", text(k + 1)))
+      if ((words.count(t) && !keep_cpp_word(t, k > 1 ? text(k - 2) : "", k ? text(k - 1) : "", text(k + 1))) ||
+          gm8_word(t))
         edits.push_back({toks[k], "gml_" + t});
     }
     if (edits.empty()) return code;
