@@ -73,7 +73,8 @@ vector<Tok> tokenize(const string &code, const string &synt) {
 
 bool punct(const Tok &t, const char *p) { return t.code == p && t.synt == p; }
 bool space(const Tok &t) { return t.code == " "; }
-bool name(const Tok &t) { return t.synt[0] == 'n' || t.synt[0] == 'V' || t.synt[0] == 'c'; }
+bool cast(const Tok &t) { return t.synt[0] == 'c' && t.code[0] == '('; }  // "(double)", tagged whole
+bool name(const Tok &t) { return t.synt[0] == 'n' || t.synt[0] == 'V' || (t.synt[0] == 'c' && !cast(t)); }
 bool number(const Tok &t) { return t.synt[0] == '0'; }
 bool str(const Tok &t) { return t.synt[0] == '"' || t.synt[0] == '\''; }
 bool scope(const Tok &t) { return punct(t, "::") || t.synt == "XX"; }
@@ -119,7 +120,7 @@ bool prefix(const Tok &t) {
 }
 
 struct Node {
-  enum Kind { kLeaf, kParen, kCall, kIndex, kMember, kUnary, kPostfix, kBinary } kind;
+  enum Kind { kLeaf, kParen, kCall, kIndex, kMember, kUnary, kPostfix, kBinary, kCast } kind;
   vector<Tok> toks;  // leaf text, or the operator and brackets
   vector<unique_ptr<Node>> kids;
   BinOp op{};
@@ -218,8 +219,25 @@ struct Parser {
     return n;
   }
 
+  // (double) x: the parser's casts, as for real division.
+  bool cast_ahead() {
+    size_t j = i + 1;
+    while (j < t.size() && space(t[j])) j++;
+    if (j >= t.size() || (t[j].synt[0] != 't' && t[j].synt[0] != 'c')) return false;
+    for (j++; j < t.size() && space(t[j]); j++) {}
+    return j < t.size() && punct(t[j], ")");
+  }
+
   PNode unary() {
     const Tok *k = peek();
+    if (k && (cast(*k) || (punct(*k, "(") && cast_ahead()))) {
+      PNode c = make(Node::kCast);
+      for (int n = cast(*k) ? 1 : 3; n > 0; n--) c->toks.push_back(t[i++]), peek();
+      PNode x = unary();
+      if (!x) return nullptr;
+      c->kids.push_back(std::move(x));
+      return c;
+    }
     if (k && prefix(*k)) {
       PNode u = make(Node::kUnary);
       u->toks.push_back(t[i++]);
@@ -449,6 +467,9 @@ struct Printer {
         return o.add(op).add(wrap(x));
       }
       case Node::kBinary: return binary(n);
+      case Node::kCast:
+        for (const Tok &k : n.toks) o.add(k);
+        return o.add(wrap(*n.kids[0]));
     }
     return o;
   }
@@ -462,7 +483,7 @@ struct Printer {
 
 bool starts_expression(const vector<Tok> &t, size_t i) {
   const Tok &k = t[i];
-  return name(k) || number(k) || str(k) || punct(k, "(") || scope(k) || prefix(k) ||
+  return name(k) || number(k) || str(k) || punct(k, "(") || scope(k) || prefix(k) || cast(k) ||
          (k.synt[0] == 't' && i + 1 < t.size() && punct(t[i + 1], "("));
 }
 
