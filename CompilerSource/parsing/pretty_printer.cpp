@@ -546,8 +546,11 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
     print("return ");
   }
   // A called name is a function or script, never a variable to lower.
-  if (node.function->type == AST::NodeType::IDENTIFIER)
-    print(std::string(node.function->As<AST::IdentifierAccess>()->name.content));
+  // GML round() is GM8-aware (half to even); engine code keeps std::round.
+  if (node.function->type == AST::NodeType::IDENTIFIER) {
+    std::string name(node.function->As<AST::IdentifierAccess>()->name.content);
+    print(name == "round" && GmlDialect() ? "enigma::gml_round" : name);
+  }
   else
     VISIT_AND_CHECK(node.function);
   print("(");
