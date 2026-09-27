@@ -56,6 +56,7 @@ namespace enigma
     // Metrics and such
     std::vector<fontglyphrange> glyphRanges;
     unsigned int height, yoffset;
+    float space_width = 0; // Sprite fonts: advance for a space or an unmapped character
 
     // Texture layer
     int texture;

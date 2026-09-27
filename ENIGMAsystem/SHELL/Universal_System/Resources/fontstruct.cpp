@@ -72,6 +72,7 @@ namespace enigma
           gtw = 0;
 
       font->height = ghm;
+      font->space_width = prop ? gwm : gwm + sep;
 
       fontglyphrange& fgr = font->glyphRanges[0];
 
@@ -99,7 +100,7 @@ namespace enigma
           for (int bx = 0; bx < gwm; bx++)
           for (int by = 0; by < ghm; by++)
           {
-            if (data[(by*gtw + bx)<<2]) // If this pixel isn't completely transparent
+            if (data[((by*gtw + bx)<<2) + 3]) // If this pixel isn't completely transparent (BGRA)
             {
               if (bx < glyphmetrics[i].x) glyphmetrics[i].x = bx;
               if (bx > glyphmetrics[i].w) glyphmetrics[i].w = bx; // Treat width as right for now
@@ -116,7 +117,7 @@ namespace enigma
         fg.x2 = glyphmetrics[i].w + 1; // And while w and h are still the right and bottom edge coordinates
         fg.y2 = glyphmetrics[i].h + 1;
 
-        fg.xs = glyphmetrics[i].w + sep; // This is just user-specified for sprite-loaded fonts
+        fg.xs = (prop ? glyphmetrics[i].w : gwm) + sep; // This is just user-specified for sprite-loaded fonts
 
         glyphmetrics[i].w -= glyphmetrics[i].x - 1; // Fix width and height to be such
         glyphmetrics[i].h -= glyphmetrics[i].y - 1; // instead of right and bottom
