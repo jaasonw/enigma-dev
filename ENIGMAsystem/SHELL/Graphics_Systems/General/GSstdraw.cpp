@@ -188,6 +188,8 @@ void draw_line_width_color(gs_scalar x1, gs_scalar y1,gs_scalar x2, gs_scalar y2
 void draw_rectangle(gs_scalar x1, gs_scalar y1,gs_scalar x2, gs_scalar y2, bool outline)
 {
   if (outline) {
+    // Through pixel centers, so the edges land on pixels x1..x2, y1..y2.
+    x1 += .5, y1 += .5, x2 += .5, y2 += .5;
     draw_primitive_begin(pr_linestrip);
     draw_vertex(x1, y1);
     draw_vertex(x2, y1);
@@ -251,6 +253,8 @@ void draw_rectangle_color(gs_scalar x1, gs_scalar y1,gs_scalar x2, gs_scalar y2,
 {
   gs_scalar alpha = draw_get_alpha();
   if (outline) {
+    // Through pixel centers, so the edges land on pixels x1..x2, y1..y2.
+    x1 += .5, y1 += .5, x2 += .5, y2 += .5;
     draw_primitive_begin(pr_linestrip);
     draw_vertex_color(x1, y1, c1, alpha);
     draw_vertex_color(x2, y1, c2, alpha);
