@@ -330,12 +330,15 @@ std::set<EventGroupKey> ListUsedEvents(
 
 int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) {
   std::filesystem::path exename;
+  // fixes a dangling pointer. this only runs when the output name lacks the build extension, which in practice means windows
+  std::string exename_u8;
   if (exe_filename) {
     exename = exe_filename;
     const std::filesystem::path buildext = compilerInfo.exe_vars["BUILD-EXTENSION"];
     if (!string_ends_with(exename.u8string(), buildext.u8string())) {
       exename += buildext;
-      exe_filename = exename.u8string().c_str();
+      exename_u8 = exename.u8string();
+      exe_filename = exename_u8.c_str();
     }
   }
 
