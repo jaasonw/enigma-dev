@@ -20,7 +20,6 @@
 // They are also, directly or otherwise, available to the user.
 
 #include "libEGMstd.h"
-#include "Universal_System/compliance.h"
 
 #include <cmath>
 #include <stdio.h>
@@ -52,10 +51,15 @@ string toString(unsigned long long n) { return string(buf,sprintf(buf,"%llu", n)
 string toString(char n)               { return string(buf,sprintf(buf,"%d", n)); }
 string toString(char* n)              { return string(n); }
 string toString(float n)              { return string(buf,sprintf(buf,"%g", n)); }
-// GML string(): GM8 prints whole numbers bare and anything else with two decimals.
+// GML string() prints whole numbers bare and anything else with two decimals, in GM8
+// and GMS alike. Sized per call: a large whole number runs to hundreds of digits.
 string toString(double n) {
-  if (!enigma::gm8_compliance()) return string(buf, sprintf(buf, "%g", n));
-  return string(buf, sprintf(buf, std::floor(n) == n ? "%.0f" : "%.2f", n));
+  const char *fmt = std::floor(n) == n ? "%.0f" : "%.2f";
+  const int len = snprintf(nullptr, 0, fmt, n);
+  if (len <= 0) return string();
+  string s(len, ' ');
+  snprintf(&s[0], len + 1, fmt, n);
+  return s;
 }
 string toString(long double n)        { return std::to_string(n); }
 string toString(const void *n)        { return string(buf,sprintf(buf,"%p",  n)); }

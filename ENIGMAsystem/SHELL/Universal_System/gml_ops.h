@@ -35,8 +35,8 @@ template <class T> T &&gml_background_index_assigned(T &&v) {
   return std::forward<T>(v);
 }
 
-// GML round(): GM8 rounds half to even (round(0.5) is 0, round(2.5) is 2).
-inline double gml_round(double x) { return gm8_compliance() ? round_half_even(x) : std::round(x); }
+// GML round() rounds half to even (round(0.5) is 0, round(2.5) is 2), in GM8 and GMS alike.
+inline double gml_round(double x) { return round_half_even(x); }
 
 // Real to integer without the undefined cast: NaN is 0, and values past the
 // type's range (infinities too) clamp to its ends.
