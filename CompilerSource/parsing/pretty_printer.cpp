@@ -74,14 +74,20 @@ static bool IsPlainRead(const AST::Node &node) {
          !static_cast<const AST::BinaryExpression &>(node).evaluate_in_order;
 }
 
-// a[i] / a[i, j] in GML whose indices have side effects: bind them left to right.
+// a[i] / a[i, j] in GML: GM8 rounds indices; side-effecting indices bind left to right.
 bool AST::CppPrettyPrinter::PrintGmlSubscript(AST::BinaryExpression &node) {
   std::vector<AST::PNode *> indices{&node.right};
   if (node.right->type == AST::NodeType::BINARY_EXPRESSION) {
     auto *comma = node.right->As<AST::BinaryExpression>();
     if (comma->operation.type == TT_COMMA) indices = {&comma->left, &comma->right};
   }
-  auto print_index = [&](AST::PNode &index) { return Visit(index); };
+  const bool gm8 = Gm8Compliance();
+  auto print_index = [&](AST::PNode &index) {
+    if (gm8) print("enigma::gml_index(");
+    if (!Visit(index)) return false;
+    if (gm8) print(")");
+    return true;
+  };
   if (node.evaluate_in_order) {
     print("[&]() -> decltype(auto) { ");
     for (std::size_t i = 0; i < indices.size(); ++i) {
@@ -465,7 +471,7 @@ static bool NeedsParens(const AST::BinaryExpression &parent, const AST::Node &op
 
 bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
   if (node.operation.type == TT_BEGINBRACKET && !in_declarator_ &&
-      node.evaluate_in_order) {
+      (node.evaluate_in_order || Gm8Compliance())) {
     return PrintGmlSubscript(node);
   }
   const bool ordered = node.evaluate_in_order;

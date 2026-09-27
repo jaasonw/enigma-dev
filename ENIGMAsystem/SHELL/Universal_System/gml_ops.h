@@ -38,6 +38,9 @@ inline double round_half_even(double x) {
 // GML round(): GM8 rounds half to even (round(0.5) is 0, round(2.5) is 2).
 inline double gml_round(double x) { return gm8_compliance() ? round_half_even(x) : std::round(x); }
 
+// Array index: GM8 rounds it half to even (a[1.5] is a[2]); standard truncates.
+inline int gml_index(double x) { return (int) (gm8_compliance() ? round_half_even(x) : x); }
+
 // Real to integer where GML needs one (bitwise operands): GM8 rounds, the
 // standard mode truncates.
 inline int64_t gml_to_int(double x) {
