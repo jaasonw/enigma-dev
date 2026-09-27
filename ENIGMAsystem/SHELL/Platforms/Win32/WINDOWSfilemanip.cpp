@@ -157,11 +157,10 @@ namespace enigma_user
 
 string file_find_next();
 
-// GM8: plain files always match; read-only, hidden, system and directory
+// GM8: plain and read-only files always match; hidden, system and directory
 // entries ("." and ".." included) only when their bits are requested.
 static bool ff_wanted(const WIN32_FIND_DATA &f) {
-  const DWORD special = FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN |
-                        FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
+  const DWORD special = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
   return !(f.dwFileAttributes & special & ~(DWORD) ff_attribs);
 }
 
