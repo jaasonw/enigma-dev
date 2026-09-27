@@ -20,7 +20,9 @@
 // They are also, directly or otherwise, available to the user.
 
 #include "libEGMstd.h"
+#include "Universal_System/compliance.h"
 
+#include <cmath>
 #include <stdio.h>
 #include <sstream>
 #include <string>
@@ -50,7 +52,11 @@ string toString(unsigned long long n) { return string(buf,sprintf(buf,"%llu", n)
 string toString(char n)               { return string(buf,sprintf(buf,"%d", n)); }
 string toString(char* n)              { return string(n); }
 string toString(float n)              { return string(buf,sprintf(buf,"%g", n)); }
-string toString(double n)             { return string(buf,sprintf(buf,"%g", n)); }
+// GML string(): GM8 prints whole numbers bare and anything else with two decimals.
+string toString(double n) {
+  if (!enigma::gm8_compliance()) return string(buf, sprintf(buf, "%g", n));
+  return string(buf, sprintf(buf, std::floor(n) == n ? "%.0f" : "%.2f", n));
+}
 string toString(long double n)        { return std::to_string(n); }
 string toString(const void *n)        { return string(buf,sprintf(buf,"%p",  n)); }
 
