@@ -18,6 +18,7 @@
 **/
 
 #include "sprites_internal.h"
+#include "Universal_System/compliance.h"
 #include "Universal_System/image_formats.h"
 #include "Graphics_Systems/graphics_mandatory.h"
 #include "Graphics_Systems/General/GStextures.h"
@@ -77,12 +78,18 @@ namespace enigma_user {
 
 int sprite_get_width(int sprid) {
   if (!sprites.exists(sprid)) return -1;
-  return sprites.get(sprid).width;
+  const Sprite &spr = sprites.get(sprid);
+  // GM8 reports a sprite with no subimages as 1x1.
+  if (spr.SubimageCount() == 0 && enigma::gm8_compliance()) return 1;
+  return spr.width;
 }
 
 int sprite_get_height(int sprid) {
   if (!sprites.exists(sprid)) return -1;
-  return sprites.get(sprid).height;
+  const Sprite &spr = sprites.get(sprid);
+  // GM8 reports a sprite with no subimages as 1x1.
+  if (spr.SubimageCount() == 0 && enigma::gm8_compliance()) return 1;
+  return spr.height;
 }
 
 gs_scalar sprite_get_texture_width_factor(int sprid, int subimg) {
