@@ -487,7 +487,12 @@ bool starts_expression(const vector<Tok> &t, size_t i) {
          (k.synt[0] == 't' && i + 1 < t.size() && punct(t[i + 1], "("));
 }
 
+vector<string> failures;
+
 }  // namespace
+
+const vector<string> &gml_expression_failures() { return failures; }
+void gml_expression_failures_clear() { failures.clear(); }
 
 void gml_expressions(string &code, string &synt) {
   if (code.size() != synt.size()) return;
@@ -498,15 +503,19 @@ void gml_expressions(string &code, string &synt) {
   int depth = 0;            // parentheses we copy rather than parse (for loops)
   int for_depth = -1, for_part = 0;
 
-  // Copies an expression we can't parse, up to the end of its statement.
+  // Copies an expression we can't parse, up to the end of its statement, and
+  // records it: printed as is it would keep C++ semantics.
   auto verbatim = [&](size_t i) {
+    string text;
     for (int d = 0; i < t.size(); i++) {
       const string &c = t[i].code;
       if (d == 0 && (punct(t[i], ";") || punct(t[i], "{") || punct(t[i], "}"))) break;
       if (c == "(" || c == "[") d++;
       if (c == ")" || c == "]") { if (d == 0) break; d--; }
       out.add(t[i]);
+      text += t[i].code;
     }
+    failures.push_back(text);
     return i;
   };
 

@@ -56,6 +56,7 @@ using namespace std;
 #include "backend/JavaCallbacks.h"
 #include "syntax/syncheck.h"
 #include "parser/parser.h"
+#include "parser/gml_expr.h"
 #include "compile_includes.h"
 #include "compile_common.h"
 
@@ -339,6 +340,7 @@ std::set<EventGroupKey> ListUsedEvents(
 }
 
 int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) {
+  gml_expression_failures_clear();
   std::filesystem::path exename;
   // fixes a dangling pointer. this only runs when the output name lacks the build extension, which in practice means windows
   std::string exename_u8;
@@ -673,6 +675,15 @@ int lang_CPP::compile(const GameData &game, const char* exe_filename, int mode) 
   // Write the global variables to their own file to be included before any of the objects
   res = current_language->compile_writeGlobals(game, &state.global_object, state.dot_accessed_locals);
   irrr();
+
+  // An expression the GML pass couldn't parse would build with C++ semantics.
+  if (!gml_expression_failures().empty()) {
+    user << "GML expression pass could not parse " << gml_expression_failures().size() << " expression(s):\n";
+    for (const string &f : gml_expression_failures()) user << "  " << f << "\n";
+    user << flushl;
+    return E_ERROR_SYNTAX;
+  }
+
 
 #ifdef WRITE_UNIMPLEMENTED_TXT
     printf("write unimplemented functions %d",0);
