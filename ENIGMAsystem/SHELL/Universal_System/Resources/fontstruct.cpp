@@ -71,7 +71,6 @@ namespace enigma
           gtw = 0;
 
       font->height = ghm;
-      font->space_width = prop ? gwm : gwm + sep;
 
       fontglyphrange& fgr = font->glyphRanges[0];
 
@@ -116,7 +115,10 @@ namespace enigma
         fg.x2 = glyphmetrics[i].w + 1; // And while w and h are still the right and bottom edge coordinates
         fg.y2 = glyphmetrics[i].h + 1;
 
-        fg.xs = (prop ? glyphmetrics[i].w : gwm) + sep; // This is just user-specified for sprite-loaded fonts
+        // GM8 advances a proportional glyph by its visible width - 1 + sep and draws its
+        // first visible column at the pen; a fixed glyph by the cell + sep (as OpenGMK).
+        fg.xs = (prop ? glyphmetrics[i].w - glyphmetrics[i].x : gwm) + sep;
+        if (prop) fg.x2 -= fg.x, fg.x = 0;
 
         glyphmetrics[i].w -= glyphmetrics[i].x - 1; // Fix width and height to be such
         glyphmetrics[i].h -= glyphmetrics[i].y - 1; // instead of right and bottom
@@ -125,6 +127,9 @@ namespace enigma
 
         fgr.glyphs.push_back(fg);
       }
+
+      // A character the font lacks draws as a space; with no space, GM8 advances by the first glyph.
+      font->space_width = gcount ? fgr.glyphs[0].xs : 0;
 
       list<unsigned int> boxes;
       for (unsigned i = 0; i < gcount; i++)
