@@ -39,6 +39,7 @@ using namespace std;
 #include "darray.h"
 
 #include "general/parse_basics_old.h"
+#include "gml_expr.h"
 #include "general/macro_integration.h"
 #include "compiler/output_locals.h"
 #include "languages/language_adapter.h"
@@ -1101,8 +1102,12 @@ static void order_evaluation(string &code, string &synt) {
 
 void print_to_file(string code,string synt,const unsigned int strc, const varray<string> &string_in_code,int indentmin_b4,ofstream &of)
 {
-  group_logical_operators(code, synt);
-  order_evaluation(code, synt);
+  if (setting::use_gml_equals) {
+    gml_expressions(code, synt);  // grouping, evaluation order and GM8 operator rules
+  } else {
+    group_logical_operators(code, synt);
+    order_evaluation(code, synt);
+  }
   //FILE* of = fopen("/media/HP_PAVILION/Documents and Settings/HP_Owner/Desktop/parseout.txt","w+b");
   FILE* of_ = fopen("/home/josh/Desktop/parseout.txt","ab");
   if (of_) { fprintf(of_,"%s\n%s\n\n\n",code.c_str(), synt.c_str()); fclose(of_); }
