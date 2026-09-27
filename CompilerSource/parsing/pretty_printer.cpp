@@ -606,7 +606,7 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
       print("(enigma::varaccess_" + name + "(int(global)) = ");
       if (node.arguments.size() > 1) VISIT_AND_CHECK(node.arguments[1]);
       print(")");
-    } else if (builtin && owner == "self") {
+    } else if ((builtin && owner == "self") || node.names_declared_globalvar) {
       print("true");
     } else {
       print("!enigma_user::is_undefined(enigma::varaccess_" + name + "(int(" + owner + ")))");
