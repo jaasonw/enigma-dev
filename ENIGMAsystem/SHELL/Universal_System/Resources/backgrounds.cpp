@@ -68,6 +68,20 @@ Background background_add_helper(std::string filename, bool transparent, bool sm
 
 }
 
+namespace enigma {
+
+void sync_background_slots() {
+  using namespace enigma_user;
+  for (int i = 0; i < 8; i++) {
+    const int back = background_index[i];
+    const bool ok = backgrounds.exists(back);
+    background_width[i] = ok ? backgrounds.get(back).width : 0;
+    background_height[i] = ok ? backgrounds.get(back).height : 0;
+  }
+}
+
+}  // namespace enigma
+
 namespace enigma_user {
   
 int background_add(std::string filename, bool transparent, bool smooth, bool preload, bool mipmap) {
@@ -86,11 +100,7 @@ bool background_replace(int back, std::string filename, bool transparent, bool s
                         bool mipmap) {
   backgrounds.get(back).FreeTexture();
   bool ok = backgrounds.replace(back, background_add_helper(filename, transparent, smooth, preload, mipmap)) != -1;
-  for (int i = 0; i < 8; i++)
-    if (int(background_index[i]) == back) {
-      background_width[i] = background_get_width(back);
-      background_height[i] = background_get_height(back);
-    }
+  enigma::sync_background_slots();
   return ok;
 }
 
