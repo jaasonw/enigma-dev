@@ -598,12 +598,23 @@ static const std::map<std::string_view, std::string_view, std::less<>> kCppOnlyW
   {"typeid", "gml_typeid"}, {"union", "gml_union"}, {"using", "gml_using"},
   {"virtual", "gml_virtual"},
 };
+// Words later GML (GMS) or EDL give meaning, but GM8 doesn't: names only under GM8 compliance.
+static const std::set<std::string_view, std::less<>> kGm8PlainWords {
+  "auto", "catch", "const", "const_cast", "constexpr", "decltype", "delete", "dynamic_cast",
+  "enum", "extern", "inline", "mutable", "new", "noexcept", "nullptr", "operator",
+  "reinterpret_cast", "sizeof", "static", "static_cast", "try", "typedef", "typename", "volatile",
+};
 Token &Lexer::TranslateNameToken(Token &token) {
   std::string_view name = token.content;
 
   if (context->compatibility_opts.use_gml_equals) {
     if (auto w = kCppOnlyWords.find(name); w != kCppOnlyWords.end()) {
       token.content = std::string(w->second);
+      token.type = TT_IDENTIFIER;
+      return token;
+    }
+    if (context->compatibility_opts.compliance_mode <= 81 && kGm8PlainWords.count(name)) {
+      token.content = "gml_" + std::string(name);
       token.type = TT_IDENTIFIER;
       return token;
     }
