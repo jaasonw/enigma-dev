@@ -27,7 +27,48 @@
 #include "fileio.h"
 #include "estring.h"
 
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#else
+#include <dirent.h>
+#include <fnmatch.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 namespace filesystem = ngs::fs;
+
+// file_find as in GM8: bare names; plain files always match, read-only, hidden,
+// system and directory entries ("." and ".." too) only when their bits are asked for.
+namespace {
+
+int ff_attrib = 0;
+
+#ifdef _WIN32
+HANDLE ff_handle = INVALID_HANDLE_VALUE;
+WIN32_FIND_DATAW ff_data;
+
+std::string ff_name() {
+  const int n = WideCharToMultiByte(CP_UTF8, 0, ff_data.cFileName, -1, nullptr, 0, nullptr, nullptr);
+  if (n <= 1) return "";
+  std::string s(n - 1, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, ff_data.cFileName, -1, s.data(), n, nullptr, nullptr);
+  return s;
+}
+
+bool ff_wanted() {
+  const DWORD special = FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN |
+                        FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
+  return !(ff_data.dwFileAttributes & special & ~(DWORD)ff_attrib);
+}
+#else
+DIR *ff_dir = nullptr;
+std::string ff_path, ff_mask;
+#endif
+
+}  // namespace
 
 namespace enigma_user {
 
@@ -216,15 +257,59 @@ namespace enigma_user {
   }
 
   std::string file_find_first(std::string mask, int attr) {
-    return filesystem::directory_contents_first(filename_path(mask), filename_name(mask), true, false);
+    file_find_close();
+    ff_attrib = attr;
+#ifdef _WIN32
+    const int n = MultiByteToWideChar(CP_UTF8, 0, mask.c_str(), -1, nullptr, 0);
+    std::wstring wmask(n > 0 ? n - 1 : 0, L'\0');
+    if (n > 1) MultiByteToWideChar(CP_UTF8, 0, mask.c_str(), -1, wmask.data(), n);
+    ff_handle = FindFirstFileW(wmask.c_str(), &ff_data);
+    if (ff_handle == INVALID_HANDLE_VALUE) return "";
+    return ff_wanted() ? ff_name() : file_find_next();
+#else
+    const size_t slash = mask.find_last_of('/');
+    ff_path = slash == std::string::npos ? "./" : mask.substr(0, slash + 1);
+    ff_mask = slash == std::string::npos ? mask : mask.substr(slash + 1);
+    if (ff_mask == "*.*") ff_mask = "*";  // Windows matches names without a dot too
+    ff_dir = opendir(ff_path.c_str());
+    return file_find_next();
+#endif
   }
 
   std::string file_find_next() {
-    return filesystem::directory_contents_next();
+#ifdef _WIN32
+    if (ff_handle == INVALID_HANDLE_VALUE) return "";
+    while (FindNextFileW(ff_handle, &ff_data))
+      if (ff_wanted()) return ff_name();
+    return "";
+#else
+    if (!ff_dir) return "";
+    while (dirent *e = readdir(ff_dir)) {
+      const std::string name = e->d_name;
+      if (fnmatch(ff_mask.c_str(), name.c_str(), FNM_CASEFOLD) != 0) continue;
+      const std::string full = ff_path + name;
+      struct stat sb;
+      if (stat(full.c_str(), &sb) != 0) continue;
+      const bool dot_dir = name == "." || name == "..";
+      int special = 0;
+      if (S_ISDIR(sb.st_mode)) special |= fa_directory;
+      if (name[0] == '.' && !dot_dir) special |= fa_hidden;
+      if (sb.st_uid == 0) special |= fa_sysfile;
+      if (access(full.c_str(), W_OK) != 0) special |= fa_readonly;
+      if (!(special & ~ff_attrib)) return name;
+    }
+    return "";
+#endif
   }
 
   void file_find_close() {
-    return filesystem::directory_contents_close();
+#ifdef _WIN32
+    if (ff_handle != INVALID_HANDLE_VALUE) FindClose(ff_handle);
+    ff_handle = INVALID_HANDLE_VALUE;
+#else
+    if (ff_dir) closedir(ff_dir);
+    ff_dir = nullptr;
+#endif
   }
  
   std::string environment_get_variable(std::string name) {
