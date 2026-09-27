@@ -431,14 +431,17 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     return n->type == AST::NodeType::LITERAL &&
            static_cast<const AST::Literal &>(*n).value.type == TT_STRINGLIT;
   };
-  // "a" + "b" would add two C++ pointers; make the left one a string.
-  const bool string_sum = node.operation.type == TT_PLUS &&
-                          is_string_literal(node.left) && is_string_literal(node.right);
+  // "a" + "b" would add two C++ pointers, "B" < "a" compare them; make the left
+  // one a string.
+  static const std::set<TokenType> kStringPairOps = {
+      TT_PLUS, TT_EQUALS, TT_EQUALTO, TT_NOTEQUAL, TT_LESS, TT_GREATER, TT_LESSEQUAL, TT_GREATEREQUAL};
+  const bool string_pair = kStringPairOps.count(node.operation.type) &&
+                           is_string_literal(node.left) && is_string_literal(node.right);
   // GM8: && and || take their operands' truth (>= 0.5).
   const bool truth_operands =
       (node.operation.type == TT_AND || node.operation.type == TT_OR) && Gm8Compliance();
   auto print_operand = [&](PNode &operand, bool right) {
-    if (string_sum && !right) {
+    if (string_pair && !right) {
       print("std::string{");
       if (!Visit(operand)) return false;
       print("}");
