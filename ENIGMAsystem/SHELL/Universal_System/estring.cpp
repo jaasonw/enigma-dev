@@ -225,10 +225,11 @@ size_t string_pos(string substr,string str) {
 }
 
 string string_format(double val, unsigned tot, unsigned dec) {
-  std::vector<char> sbuf(19 + tot + dec);
-  sbuf[0] = 0;
-  sprintf(sbuf.data(), "%0*.*f", tot, dec, val);
-  return sbuf.data();
+  const int n = snprintf(nullptr, 0, "%0*.*f", tot, dec, val);
+  if (n <= 0) return "";
+  string res(n, '\0');
+  snprintf(res.data(), n + 1, "%0*.*f", tot, dec, val);
+  return res;
 }
 
 string string_copy(string str, int index, int count) {
