@@ -64,6 +64,49 @@ bool AST::CppPrettyPrinter::VisitCondition(PNode &condition) {
   return true;
 }
 
+static bool NeedsParens(const AST::BinaryExpression &parent, const AST::Node &operand, bool right);
+
+// A variable read with no side effects: bound by value when operands are ordered.
+static bool IsPlainRead(const AST::Node &node) {
+  if (node.type == AST::NodeType::IDENTIFIER || node.type == AST::NodeType::SCOPE_ACCESS) return true;
+  return node.type == AST::NodeType::BINARY_EXPRESSION &&
+         static_cast<const AST::BinaryExpression &>(node).operation.type == TT_BEGINBRACKET &&
+         !static_cast<const AST::BinaryExpression &>(node).evaluate_in_order;
+}
+
+// a[i] / a[i, j] in GML whose indices have side effects: bind them left to right.
+bool AST::CppPrettyPrinter::PrintGmlSubscript(AST::BinaryExpression &node) {
+  std::vector<AST::PNode *> indices{&node.right};
+  if (node.right->type == AST::NodeType::BINARY_EXPRESSION) {
+    auto *comma = node.right->As<AST::BinaryExpression>();
+    if (comma->operation.type == TT_COMMA) indices = {&comma->left, &comma->right};
+  }
+  auto print_index = [&](AST::PNode &index) { return Visit(index); };
+  if (node.evaluate_in_order) {
+    print("[&]() -> decltype(auto) { ");
+    for (std::size_t i = 0; i < indices.size(); ++i) {
+      print("auto enigma_index" + std::to_string(i) + " = ");
+      if (!print_index(*indices[i])) return false;
+      print("; ");
+    }
+    print("return ");
+  }
+  const bool paren = NeedsParens(node, *node.left, false);
+  if (paren) print("(");
+  VISIT_AND_CHECK(node.left);
+  if (paren) print(")");
+  const bool multi = indices.size() > 1;
+  print(multi ? "(" : "[");
+  for (std::size_t i = 0; i < indices.size(); ++i) {
+    if (i) print(", ");
+    if (node.evaluate_in_order) print("enigma_index" + std::to_string(i));
+    else if (!print_index(*indices[i])) return false;
+  }
+  print(multi ? ")" : "]");
+  if (node.evaluate_in_order) print("; }()");
+  return true;
+}
+
 void AST::CppPrettyPrinter::PrintSemiColon(AST::PNode &node) {
   if (node->type != AST::NodeType::BLOCK && node->type != AST::NodeType::IF && node->type != AST::NodeType::FOR &&
       node->type != AST::NodeType::CASE && node->type != AST::NodeType::DEFAULT &&
@@ -425,9 +468,19 @@ static bool NeedsParens(const AST::BinaryExpression &parent, const AST::Node &op
 }
 
 bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
+  if (node.operation.type == TT_BEGINBRACKET && !in_declarator_ &&
+      node.evaluate_in_order) {
+    return PrintGmlSubscript(node);
+  }
   const bool ordered = node.evaluate_in_order;
+  const TokenType op_type = node.operation.type;
+  const bool assigns = op_type == TT_ASSIGN || op_type == TT_ASSOP ||
+                       (op_type == TT_EQUALS && !node.lower_gml_equals);
+  // A plain read is copied (a later operand may change it); an assignment
+  // target stays a reference.
+  const bool copy_lhs = ordered && !assigns && IsPlainRead(*node.left);
   if (ordered) {
-    print("[&]() -> decltype(auto) { auto&& enigma_lhs = ");
+    print(std::string("[&]() -> decltype(auto) { ") + (copy_lhs ? "auto" : "auto&&") + " enigma_lhs = ");
     VISIT_AND_CHECK(node.left);
     print("; return ");
   }
@@ -452,7 +505,7 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
       return true;
     }
     if (ordered && !right) {
-      print("std::forward<decltype(enigma_lhs)>(enigma_lhs)");
+      print(copy_lhs ? "enigma_lhs" : "std::forward<decltype(enigma_lhs)>(enigma_lhs)");
       return true;
     }
     const bool paren = NeedsParens(node, *operand, right);
@@ -558,7 +611,9 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
   if (ordered) {
     print("[&]() -> decltype(auto) { ");
     for (std::size_t i = 0; i < node.arguments.size(); i++) {
-      print("auto&& enigma_arg" + std::to_string(i) + " = ");
+      // A plain read is copied: a later argument may change the variable.
+      print(std::string(IsPlainRead(*node.arguments[i]) ? "auto" : "auto&&") +
+            " enigma_arg" + std::to_string(i) + " = ");
       VISIT_AND_CHECK(node.arguments[i]);
       print("; ");
     }
@@ -593,7 +648,7 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
     }
     if (ordered) {
       const std::string arg = "enigma_arg" + std::to_string(i);
-      print("std::forward<decltype(" + arg + ")>(" + arg + ")");
+      print(IsPlainRead(*node.arguments[i]) ? arg : "std::forward<decltype(" + arg + ")>(" + arg + ")");
     } else {
       VISIT_AND_CHECK(node.arguments[i]);
     }
