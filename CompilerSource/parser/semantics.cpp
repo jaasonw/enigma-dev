@@ -149,6 +149,20 @@ bool SemanticAnnotator::VisitBinaryExpression(AST::BinaryExpression &node) {
       OrderMatters({node.left.get(), node.right.get()})) {
     node.evaluate_in_order = true;
   }
+  if (gml_equals_ && node.operation.type == TT_BEGINBRACKET &&
+      node.right->type == AST::NodeType::BINARY_EXPRESSION) {
+    // a[i, j]: the two indices print as C++ call arguments.
+    auto *comma = node.right->As<AST::BinaryExpression>();
+    if (comma->operation.type == TT_COMMA && OrderMatters({comma->left.get(), comma->right.get()}))
+      node.evaluate_in_order = true;
+  }
+  // a[i()] = v(): GML evaluates the target's index before the value; C++17
+  // evaluates the right side of = first.
+  const TokenType op = node.operation.type;
+  if (gml_equals_ && (op == TT_ASSIGN || op == TT_ASSOP || (op == TT_EQUALS && !node.lower_gml_equals)) &&
+      HasSideEffects(*node.left) && node.right->type != AST::NodeType::LITERAL) {
+    node.evaluate_in_order = true;
+  }
   // An assignment's right-hand side is statement-like in GML only for the
   // leftmost =; nested ones compare, which the set membership handles.
   return true;

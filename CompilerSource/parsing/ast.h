@@ -819,6 +819,7 @@ class AST {
     bool GmlDialect() const;
     bool Gm8Compliance() const;
     bool VisitCondition(PNode &condition);
+    bool PrintGmlSubscript(BinaryExpression &node);
 
    public:
     CppPrettyPrinter();
