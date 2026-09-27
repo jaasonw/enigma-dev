@@ -838,11 +838,12 @@ class AST {
     // Enclosing statements `break` (loops, with, switch) and `continue`
     // (loops, with) can target; with none, GML ends the script or event.
     int break_targets_ = 0, continue_targets_ = 0;
-    // Printing an assignment to a GM8 integer view variable.
-    bool rounding_view_ = false;
+    // Printing an assignment wrapped in its AssignHook.
+    bool in_assign_hook_ = false;
     // GML code (as opposed to EDL/C++), and GM8 compliance within it.
     bool GmlDialect() const;
     bool Gm8Compliance() const;
+    const char *AssignHook(const AST::Node &target) const;
     bool VisitCondition(PNode &condition);
     bool PrintGmlSubscript(BinaryExpression &node);
 

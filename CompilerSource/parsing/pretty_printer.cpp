@@ -74,17 +74,27 @@ static bool IsPlainRead(const AST::Node &node) {
          !static_cast<const AST::BinaryExpression &>(node).evaluate_in_order;
 }
 
-// GM8 stores these view variables as integers: an assignment rounds.
-static bool IsIntViewVariable(const AST::Node &node) {
-  static const std::set<std::string, std::less<>> kNames = {
-      "view_xview", "view_yview", "view_wview", "view_hview", "view_xport", "view_yport",
-      "view_wport", "view_hport", "view_hborder", "view_vborder", "view_hspeed", "view_vspeed"};
+// The variable an assignment target names: `a` for both `a` and `a[i]`.
+static std::string_view AssignedName(const AST::Node &node) {
   const AST::Node *root = &node;
   if (root->type == AST::NodeType::BINARY_EXPRESSION &&
       static_cast<const AST::BinaryExpression &>(*root).operation.type == TT_BEGINBRACKET)
     root = static_cast<const AST::BinaryExpression &>(*root).left.get();
-  return root->type == AST::NodeType::IDENTIFIER &&
-         kNames.count(static_cast<const AST::IdentifierAccess &>(*root).name.content);
+  if (root->type != AST::NodeType::IDENTIFIER) return {};
+  return static_cast<const AST::IdentifierAccess &>(*root).name.content;
+}
+
+// Runtime hook for an assignment to a built-in array, or null.
+const char *AST::CppPrettyPrinter::AssignHook(const AST::Node &target) const {
+  // GM8 stores these view variables as integers: an assignment rounds.
+  static const std::set<std::string, std::less<>> kIntViews = {
+      "view_xview", "view_yview", "view_wview", "view_hview", "view_xport", "view_yport",
+      "view_wport", "view_hport", "view_hborder", "view_vborder", "view_hspeed", "view_vspeed"};
+  if (!GmlDialect()) return nullptr;
+  const std::string_view name = AssignedName(target);
+  if (name == "background_index") return "enigma::gml_background_index_assigned(";
+  if (Gm8Compliance() && kIntViews.count(name)) return "enigma::gml_round_view(";
+  return nullptr;
 }
 
 // a[i] / a[i, j] in GML: GM8 rounds indices; side-effecting indices bind left to right.
@@ -514,12 +524,12 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
   const TokenType op_type = node.operation.type;
   const bool assigns = op_type == TT_ASSIGN || op_type == TT_ASSOP ||
                        (op_type == TT_EQUALS && !node.lower_gml_equals);
-  if (assigns && !rounding_view_ && Gm8Compliance() && IsIntViewVariable(*node.left)) {
-    rounding_view_ = true;
-    print("enigma::gml_round_view(");
+  if (const char *hook = assigns && !in_assign_hook_ ? AssignHook(*node.left) : nullptr) {
+    in_assign_hook_ = true;
+    print(hook);
     const bool ok = VisitBinaryExpression(node);
     print(")");
-    rounding_view_ = false;
+    in_assign_hook_ = false;
     return ok;
   }
   // A plain read is copied (a later operand may change it); an assignment

@@ -42,6 +42,12 @@ template <class T> T &&gml_round_view(T &&v) {
   v = round_half_even((double)v);
   return std::forward<T>(v);
 }
+// background_width/height follow background_index.
+void sync_background_slots();
+template <class T> T &&gml_background_index_assigned(T &&v) {
+  sync_background_slots();
+  return std::forward<T>(v);
+}
 inline double gml_round(double x) { return gm8_compliance() ? round_half_even(x) : std::round(x); }
 
 // Array index: GM8 rounds it half to even (a[1.5] is a[2]); standard truncates.
