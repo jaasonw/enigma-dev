@@ -19,6 +19,7 @@
 #define ENIGMA_VAR4_H
 
 #include "lua_table.h"
+#include "gml_ops.h"
 
 #include <cmath>
 #include <limits>
@@ -563,23 +564,23 @@ struct evariant : enigma::evariant_real_union, enigma::evariant_string_wrapper {
 
   template<typename T>
   decltype(0LL << (int)*(T*)nullptr) operator<<(T x) const {
-    return (long long) rval.d << (int) x;
+    return (long long) enigma::gml_shl(rval.d, (double) x);
   }
   template<typename T>
   decltype(0LL >> (int)*(T*)nullptr) operator>>(T x) const {
-    return (long long) rval.d >> (int) x;
+    return (long long) enigma::gml_shr(rval.d, (double) x);
   }
   template<typename T>
   decltype(0LL & (long long)*(T*)nullptr) operator&(T x) const {
-    return (long long) rval.d & (long long) x;
+    return enigma::gml_to_int(rval.d) & enigma::gml_to_int((double) x);
   }
   template<typename T>
   decltype(0LL | (long long)*(T*)nullptr) operator|(T x) const {
-    return (long long) rval.d | (long long) x;
+    return enigma::gml_to_int(rval.d) | enigma::gml_to_int((double) x);
   }
   template<typename T>
   decltype(0LL | (long long)*(T*)nullptr) operator^(T x) const {
-    return (long long) rval.d ^ (long long) x;
+    return enigma::gml_to_int(rval.d) ^ enigma::gml_to_int((double) x);
   }
 
   // Miscellanea
@@ -742,19 +743,19 @@ VARBINOP double operator%(T a, const U &b) {
 }
 
 VARBINOP long long operator<<(T a, const U &b) {
-  return (long long) a << (long long) b.rval.d;
+  return (long long) enigma::gml_shl((double) a, b.rval.d);
 }
 VARBINOP long long operator>>(T a, const U &b) {
-  return (long long) a >> (long long) b.rval.d;
+  return (long long) enigma::gml_shr((double) a, b.rval.d);
 }
 VARBINOP long long operator&(T a, const U &b) {
-  return (long long) a & (long long) b.rval.d;
+  return enigma::gml_to_int((double) a) & enigma::gml_to_int(b.rval.d);
 }
 VARBINOP long long operator|(T a, const U &b) {
-  return (long long) a | (long long) b.rval.d;
+  return enigma::gml_to_int((double) a) | enigma::gml_to_int(b.rval.d);
 }
 VARBINOP long long operator^(T a, const U &b) {
-  return (long long) a ^ (long long) b.rval.d;
+  return enigma::gml_to_int((double) a) ^ enigma::gml_to_int(b.rval.d);
 }
 
 #undef VARBINOP
