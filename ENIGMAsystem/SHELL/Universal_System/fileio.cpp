@@ -35,12 +35,11 @@
 #include <dirent.h>
 #include <fnmatch.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #endif
 
 namespace filesystem = ngs::fs;
 
-// file_find as in GM8: bare names; plain files always match, read-only, hidden,
+// file_find as in GM8: bare names; plain and read-only files always match; hidden,
 // system and directory entries ("." and ".." too) only when their bits are asked for.
 namespace {
 
@@ -59,8 +58,7 @@ std::string ff_name() {
 }
 
 bool ff_wanted() {
-  const DWORD special = FILE_ATTRIBUTE_READONLY | FILE_ATTRIBUTE_HIDDEN |
-                        FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
+  const DWORD special = FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_DIRECTORY;
   return !(ff_data.dwFileAttributes & special & ~(DWORD)ff_attrib);
 }
 #else
@@ -295,7 +293,6 @@ namespace enigma_user {
       if (S_ISDIR(sb.st_mode)) special |= fa_directory;
       if (name[0] == '.' && !dot_dir) special |= fa_hidden;
       if (sb.st_uid == 0) special |= fa_sysfile;
-      if (access(full.c_str(), W_OK) != 0) special |= fa_readonly;
       if (!(special & ~ff_attrib)) return name;
     }
     return "";
