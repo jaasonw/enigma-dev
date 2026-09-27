@@ -46,6 +46,14 @@ AST::CppPrettyPrinter::CppPrettyPrinter(std::ofstream &ofs, const LanguageFronte
 
 void AST::CppPrettyPrinter::print(std::string code) { *of << code; }
 
+bool AST::CppPrettyPrinter::GmlDialect() const {
+  return language_fe && language_fe->compatibility_opts().use_gml_equals;
+}
+
+bool AST::CppPrettyPrinter::Gm8Compliance() const {
+  return GmlDialect() && language_fe->compatibility_opts().compliance_mode <= 81;
+}
+
 void AST::CppPrettyPrinter::PrintSemiColon(AST::PNode &node) {
   if (node->type != AST::NodeType::BLOCK && node->type != AST::NodeType::IF && node->type != AST::NodeType::FOR &&
       node->type != AST::NodeType::CASE && node->type != AST::NodeType::DEFAULT &&
@@ -326,6 +334,12 @@ bool AST::CppPrettyPrinter::VisitUnaryPostfixExpression(AST::UnaryPostfixExpress
 }
 
 bool AST::CppPrettyPrinter::VisitUnaryPrefixExpression(AST::UnaryPrefixExpression &node) {
+  if (node.operation.type == TT_TILDE && GmlDialect()) {
+    print("enigma::gml_bitnot(");
+    VISIT_AND_CHECK(node.operand);
+    print(")");
+    return true;
+  }
   print(node.operation.type == TT_NOT ? "!" : node.operation.token);
   VISIT_AND_CHECK(node.operand);
   return true;
@@ -430,6 +444,20 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     if (paren) print(")");
     return true;
   };
+  // GML bitwise operands are reals: a C++ `double & int` doesn't compile and an
+  // int `1 << 40` overflows. The helpers convert to 64-bit integers (GM8: rounding).
+  static const std::map<TokenType, std::string> kGmlBitwise = {
+      {TT_AMPERSAND, "enigma::gml_bitand("}, {TT_PIPE, "enigma::gml_bitor("},
+      {TT_CARET, "enigma::gml_bitxor("}, {TT_LSH, "enigma::gml_shl("}, {TT_RSH, "enigma::gml_shr("}};
+  if (auto op = kGmlBitwise.find(node.operation.type); op != kGmlBitwise.end() && GmlDialect()) {
+    print(op->second);
+    if (!visit_operand(node.left, false)) return false;
+    print(", ");
+    VISIT_AND_CHECK(node.right);
+    print(")");
+    if (ordered) print("; }()");
+    return true;
+  }
   if (node.operation.type == TT_XOR) {  // C++ has no logical xor
     print("(bool(");
     if (!visit_operand(node.left, false)) return false;
