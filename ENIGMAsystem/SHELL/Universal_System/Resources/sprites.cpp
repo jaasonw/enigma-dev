@@ -38,22 +38,18 @@ using enigma::RawImage;
 
 namespace {
 
-// GM8 smooth edges: an opaque pixel keeps the share of its 8 neighbors that are
-// opaque too. Neighbors outside the image count as opaque.
+// GM8 smooth edges: each transparent pixel, in row order, takes 32 off the alpha of
+// the pixels around it that have at least 32 left (as OpenGMK's process_image).
 void smooth_edges(RawImage& img) {
   const int w = img.w, h = img.h;
-  std::vector<unsigned char> alpha(w * h);
-  for (int i = 0; i < w * h; i++) alpha[i] = img.pxdata[4 * i + 3];
   for (int y = 0; y < h; y++)
     for (int x = 0; x < w; x++) {
-      if (!alpha[y * w + x]) continue;
-      int opaque = 0;
-      for (int dy = -1; dy <= 1; dy++)
-        for (int dx = -1; dx <= 1; dx++) {
-          const int nx = x + dx, ny = y + dy;
-          if ((dx || dy) && (nx < 0 || ny < 0 || nx >= w || ny >= h || alpha[ny * w + nx])) opaque++;
+      if (img.pxdata[4 * (y * w + x) + 3]) continue;
+      for (int ny = std::max(y - 1, 0); ny < std::min(y + 2, h); ny++)
+        for (int nx = std::max(x - 1, 0); nx < std::min(x + 2, w); nx++) {
+          unsigned char &a = img.pxdata[4 * (ny * w + nx) + 3];
+          if (a >= 32) a -= 32;
         }
-      img.pxdata[4 * (y * w + x) + 3] = alpha[y * w + x] * opaque / 8;
     }
 }
 
