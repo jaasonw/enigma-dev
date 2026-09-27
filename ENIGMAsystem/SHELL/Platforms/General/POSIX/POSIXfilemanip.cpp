@@ -82,8 +82,9 @@ string file_find_next() {
   while (dirent* rd = readdir(fff_dir_open)) {
     string r = rd->d_name;
 
-    if (r == "." or r == ".."                                                      // Don't return ./ and
-        or ((r[0] == '.' or r[r.length() - 1] == '~') and not_attrib & fa_hidden)  // Filter hidden files
+    // "." and ".." are directories, returned with fa_directory as in GM8, not hidden files.
+    const bool dot_dir = r == "." or r == "..";
+    if (((r[0] == '.' and !dot_dir) or r[r.length() - 1] == '~') and not_attrib & fa_hidden  // Filter hidden files
         or fnmatch(mask.c_str(), r.c_str(), FNM_CASEFOLD) != 0
     )
       continue;
