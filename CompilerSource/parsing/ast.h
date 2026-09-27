@@ -838,6 +838,8 @@ class AST {
     // Enclosing statements `break` (loops, with, switch) and `continue`
     // (loops, with) can target; with none, GML ends the script or event.
     int break_targets_ = 0, continue_targets_ = 0;
+    // Printing an assignment to a GM8 integer view variable.
+    bool rounding_view_ = false;
     // GML code (as opposed to EDL/C++), and GM8 compliance within it.
     bool GmlDialect() const;
     bool Gm8Compliance() const;
