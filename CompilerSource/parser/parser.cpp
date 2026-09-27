@@ -40,6 +40,7 @@
 #include <string> //Ease of use
 #include <iostream> //Print shit
 #include <vector> //Store case labels
+#include <algorithm>
 #include <cstdlib> //stdout, fflush
 #include <cstdio> //stdout, fflush
 using namespace std; //More ease //To interface with externally defined types and functions
@@ -823,7 +824,6 @@ int parser_secondary(CompileState &state, ParsedCode *parsed_code) {
         { handicap = 2; break; }
       if (handicap)
       {
-        int delta = 0;
         code.insert(pos,"}");
         synt.insert(pos,"}");
 
@@ -832,20 +832,23 @@ int parser_secondary(CompileState &state, ParsedCode *parsed_code) {
         const string switch_index_code = cname;
         const string switch_index_lexn(switch_index_code.length(), 'n'), switch_index_lexb(switch_index_code.length(), 'b');
 
-        if (default_start_pos) {
-          code.replace(default_start_pos, 7, "$s" + switch_index_code + "default");
-          synt.replace(default_start_pos, 7, "bb" + switch_index_lexb + "bbbbbbb");
-        }
-
+        // Relabel back to front: each replacement changes the length, and a
+        // default can sit between the cases.
+        struct Relabel { pt pos, len; string code, synt; };
+        vector<Relabel> relabels;
+        if (default_start_pos)
+          relabels.push_back({default_start_pos, 7, "$s" + switch_index_code + "default", "bb" + switch_index_lexb + "bbbbbbb"});
         for (size_t i = 0; i < cases.size(); i++)
         {
           sprintf(cname,"$s%dc%d",switch_count,(int)i);
-          string rep = cname, res = string(rep.length(),'b');
-
-          code.replace(cases[i].pos + delta, cases[i].len, cases[i].mylabel = rep);
-          synt.replace(cases[i].pos + delta, cases[i].len, cases[i].mylsynt = res);
-
-          delta += int(rep.length() - cases[i].len);
+          cases[i].mylabel = cname;
+          cases[i].mylsynt = string(cases[i].mylabel.length(),'b');
+          relabels.push_back({cases[i].pos, cases[i].len, cases[i].mylabel, cases[i].mylsynt});
+        }
+        sort(relabels.begin(), relabels.end(), [](const Relabel &a, const Relabel &b) { return a.pos > b.pos; });
+        for (const Relabel &r : relabels) {
+          code.replace(r.pos, r.len, r.code);
+          synt.replace(r.pos, r.len, r.synt);
         }
         sprintf(cname,"$s%dvalue",switch_count);
         string valuevar = cname;
@@ -897,8 +900,13 @@ int parser_secondary(CompileState &state, ParsedCode *parsed_code) {
             for (size_t ii = 0; ii < i->second.size(); ii++)
             {
               const int casenum = i->second[ii];
-              icode += "if($s" + switch_index_code + "value==" + cases[casenum].code + ")goto " + cases[casenum].mylabel + ';';
-              isynt += "ss(nn" + switch_index_lexn + "nnnnn==" + cases[casenum].synt + ")bbbbb" + cases[casenum].mylsynt + ';';
+              // GM8 checks labels in order and default matches when reached: a case
+              // after the default only runs by falling through. Keep its test (it
+              // holds the label's strings) but never take it.
+              const bool unreachable = setting::compliance_mode <= setting::COMPL_GM8 && default_start_pos &&
+                                       cases[casenum].pos > default_start_pos;
+              icode += string("if(") + (unreachable ? "false&&" : "") + "$s" + switch_index_code + "value==" + cases[casenum].code + ")goto " + cases[casenum].mylabel + ';';
+              isynt += string("ss(") + (unreachable ? "nnnnn&&" : "") + "nn" + switch_index_lexn + "nnnnn==" + cases[casenum].synt + ")bbbbb" + cases[casenum].mylsynt + ';';
               string_index += cases[casenum].strc;
 
               for (int iii = 0; iii < cases[casenum].strc; iii++)
