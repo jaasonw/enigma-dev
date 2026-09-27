@@ -95,7 +95,6 @@ string file_find_next() {
 
     if ((sb.st_mode & S_IFDIR and not_attrib & fa_directory)          // Filter out/for directories
         or (sb.st_uid == u_root and not_attrib & fa_sysfile)          // Filter system files
-        or (not_attrib & fa_readonly and access(fqfn.c_str(), W_OK))  // Filter read-only files
     )
       continue;
 
