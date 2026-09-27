@@ -25,7 +25,10 @@
 #include "Graphics_Systems/General/GScolor_macros.h"
 #include "Widget_Systems/widgets_mandatory.h"
 
+#include <algorithm>
+#include <climits>
 #include <string>
+#include <vector>
 
 using enigma::Sprite;
 using enigma::sprites;
@@ -34,6 +37,35 @@ using enigma::Color;
 using enigma::RawImage;
 
 namespace {
+
+// GM8 smooth edges: an opaque pixel keeps the share of its 8 neighbors that are
+// opaque too. Neighbors outside the image count as opaque.
+void smooth_edges(RawImage& img) {
+  const int w = img.w, h = img.h;
+  std::vector<unsigned char> alpha(w * h);
+  for (int i = 0; i < w * h; i++) alpha[i] = img.pxdata[4 * i + 3];
+  for (int y = 0; y < h; y++)
+    for (int x = 0; x < w; x++) {
+      if (!alpha[y * w + x]) continue;
+      int opaque = 0;
+      for (int dy = -1; dy <= 1; dy++)
+        for (int dx = -1; dx <= 1; dx++) {
+          const int nx = x + dx, ny = y + dy;
+          if ((dx || dy) && (nx < 0 || ny < 0 || nx >= w || ny >= h || alpha[ny * w + nx])) opaque++;
+        }
+      img.pxdata[4 * (y * w + x) + 3] = alpha[y * w + x] * opaque / 8;
+    }
+}
+
+// Grows [l, r] x [t, b] (inclusive) to the image's visible pixels.
+void grow_bbox(const RawImage& img, int& l, int& t, int& r, int& b) {
+  for (unsigned y = 0; y < img.h; y++)
+    for (unsigned x = 0; x < img.w; x++)
+      if (img.pxdata[4 * (y * img.w + x) + 3]) {
+        l = std::min(l, int(x)), r = std::max(r, int(x));
+        t = std::min(t, int(y)), b = std::max(b, int(y));
+      }
+}
 
 Sprite sprite_add_helper(std::string filename, int imgnumb, bool precise, bool transparent, bool smooth, bool preload, int x_offset, int y_offset, bool mipmap) {
   std::vector<RawImage> imgs = enigma::image_load(filename);
@@ -45,7 +77,12 @@ Sprite sprite_add_helper(std::string filename, int imgnumb, bool precise, bool t
   
   unsigned cellwidth = ((imgs.size() > 1) ? imgs[0].w : imgs[0].w / imgnumb);
   Sprite ns(cellwidth, imgs[0].h, x_offset, y_offset);
-  ns.SetBBox(0, 0, cellwidth, imgs[0].h);
+  int l = INT_MAX, t = INT_MAX, r = -1, b = -1;
+  auto add = [&](RawImage& i) {
+    if (smooth) smooth_edges(i);
+    grow_bbox(i, l, t, r, b);
+    ns.AddSubimage(i, ((precise) ? enigma::ct_precise : enigma::ct_bbox), i.pxdata, mipmap);
+  };
 
   // If sprite transparent, set the alpha to zero for pixels that should be
   // transparent from lower left pixel color
@@ -57,17 +94,18 @@ Sprite sprite_add_helper(std::string filename, int imgnumb, bool precise, bool t
     }
   
     std::vector<RawImage> rawSubimages = enigma::image_split(imgs[0], imgnumb);
-    for (const RawImage& i : rawSubimages) {
-      ns.AddSubimage(i, ((precise) ? enigma::ct_precise : enigma::ct_bbox), i.pxdata, mipmap);
-    }
+    for (RawImage& i : rawSubimages) add(i);
   } else {
     for (RawImage& i : imgs) {
       if (transparent) {
         enigma::image_swap_color(i, c, Color {0, 0, 0, 0});
       }
-      ns.AddSubimage(i, ((precise) ? enigma::ct_precise : enigma::ct_bbox), i.pxdata, mipmap);
+      add(i);
     }
   }
+  // right and bottom are inclusive, as for compiled sprites; nothing visible keeps the full cell.
+  if (r < 0) l = 0, t = 0, r = cellwidth - 1, b = imgs[0].h - 1;
+  ns.SetBBox(l, t, r - l, b - t);
   
   return ns;
 }
