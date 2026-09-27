@@ -292,7 +292,6 @@ namespace enigma_user {
       int special = 0;
       if (S_ISDIR(sb.st_mode)) special |= fa_directory;
       if (name[0] == '.' && !dot_dir) special |= fa_hidden;
-      if (sb.st_uid == 0) special |= fa_sysfile;
       if (!(special & ~ff_attrib)) return name;
     }
     return "";
