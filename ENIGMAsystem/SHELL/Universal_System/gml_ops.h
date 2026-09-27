@@ -54,6 +54,10 @@ inline double gml_shr(double a, double b) {
   return gm8_compliance() ? (double) ((uint64_t) v >> n) : (double) (v >> n);
 }
 
+// GM8 treats a real as true when it is at least 0.5.
+template<typename T> inline bool gml_truth(const T &x) { return (double) x >= 0.5; }
+inline bool gml_truth(bool x) { return x; }
+
 }  // namespace enigma
 
 #endif  // ENIGMA_GML_OPS_H

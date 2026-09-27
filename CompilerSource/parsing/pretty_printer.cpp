@@ -54,6 +54,16 @@ bool AST::CppPrettyPrinter::Gm8Compliance() const {
   return GmlDialect() && language_fe->compatibility_opts().compliance_mode <= 81;
 }
 
+// A value used as a truth value. GM8 counts a real as true when it is >= 0.5.
+bool AST::CppPrettyPrinter::VisitCondition(PNode &condition) {
+  if (!Gm8Compliance()) return Visit(condition);
+  // Own parentheses: `if` prints a parenthetical condition flush after itself.
+  print("(enigma::gml_truth(");
+  if (!Visit(condition)) return false;
+  print("))");
+  return true;
+}
+
 void AST::CppPrettyPrinter::PrintSemiColon(AST::PNode &node) {
   if (node->type != AST::NodeType::BLOCK && node->type != AST::NodeType::IF && node->type != AST::NodeType::FOR &&
       node->type != AST::NodeType::CASE && node->type != AST::NodeType::DEFAULT &&
@@ -337,6 +347,7 @@ bool AST::CppPrettyPrinter::VisitUnaryPrefixExpression(AST::UnaryPrefixExpressio
     return true;
   }
   print(node.operation.type == TT_NOT ? "!" : node.operation.token);
+  if (node.operation.type == TT_NOT || node.operation.type == TT_BANG) return VisitCondition(node.operand);
   VISIT_AND_CHECK(node.operand);
   return true;
 }
@@ -423,7 +434,10 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
   // "a" + "b" would add two C++ pointers; make the left one a string.
   const bool string_sum = node.operation.type == TT_PLUS &&
                           is_string_literal(node.left) && is_string_literal(node.right);
-  auto visit_operand = [&](PNode &operand, bool right) {
+  // GM8: && and || take their operands' truth (>= 0.5).
+  const bool truth_operands =
+      (node.operation.type == TT_AND || node.operation.type == TT_OR) && Gm8Compliance();
+  auto print_operand = [&](PNode &operand, bool right) {
     if (string_sum && !right) {
       print("std::string{");
       if (!Visit(operand)) return false;
@@ -438,6 +452,13 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     if (paren) print("(");
     if (!Visit(operand)) return false;
     if (paren) print(")");
+    return true;
+  };
+  auto visit_operand = [&](PNode &operand, bool right) {
+    if (!truth_operands) return print_operand(operand, right);
+    print("enigma::gml_truth(");
+    if (!print_operand(operand, right)) return false;
+    print(")");
     return true;
   };
   // GML bitwise operands are reals: a C++ `double & int` doesn't compile and an
@@ -455,9 +476,10 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     return true;
   }
   if (node.operation.type == TT_XOR) {  // C++ has no logical xor
-    print("(bool(");
+    const char *truth = Gm8Compliance() ? "enigma::gml_truth(" : "bool(";
+    print(std::string("(") + truth);
     if (!visit_operand(node.left, false)) return false;
-    print(") != bool(");
+    print(std::string(") != ") + truth);
     VISIT_AND_CHECK(node.right);
     print("))");
     if (ordered) print("; }()");
@@ -565,7 +587,7 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
 }
 
 bool AST::CppPrettyPrinter::VisitTernaryExpression(AST::TernaryExpression &node) {
-  VISIT_AND_CHECK(node.condition);
+  if (!VisitCondition(node.condition)) return false;
   print(" ? ");
 
   VISIT_AND_CHECK(node.true_expression);
@@ -899,7 +921,7 @@ bool AST::CppPrettyPrinter::VisitIfStatement(AST::IfStatement &node) {
     print("(");
   }
 
-  VISIT_AND_CHECK(node.condition);
+  if (!VisitCondition(node.condition)) return false;
 
   if (node.condition->type != AST::NodeType::PARENTHETICAL) {
     print(")");
@@ -932,7 +954,7 @@ bool AST::CppPrettyPrinter::VisitForLoop(AST::ForLoop &node) {
   if (node.assignment) VISIT_AND_CHECK(node.assignment);
   print("; ");
 
-  if (node.condition) VISIT_AND_CHECK(node.condition);
+  if (node.condition && !VisitCondition(node.condition)) return false;
   print("; ");
 
   if (node.increment) VISIT_AND_CHECK(node.increment);
@@ -1038,7 +1060,7 @@ bool AST::CppPrettyPrinter::VisitWhileLoop(AST::WhileLoop &node) {
     }
   }
 
-  VISIT_AND_CHECK(node.condition);
+  if (!VisitCondition(node.condition)) return false;
 
   if (node.kind == AST::WhileLoop::Kind::UNTIL) {
     print(")");
@@ -1081,7 +1103,7 @@ bool AST::CppPrettyPrinter::VisitDoLoop(AST::DoLoop &node) {
     }
   }
 
-  VISIT_AND_CHECK(node.condition);
+  if (!VisitCondition(node.condition)) return false;
 
   if (node.is_until) {
     print(")");

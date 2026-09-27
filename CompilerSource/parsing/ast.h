@@ -818,6 +818,7 @@ class AST {
     // GML code (as opposed to EDL/C++), and GM8 compliance within it.
     bool GmlDialect() const;
     bool Gm8Compliance() const;
+    bool VisitCondition(PNode &condition);
 
    public:
     CppPrettyPrinter();
