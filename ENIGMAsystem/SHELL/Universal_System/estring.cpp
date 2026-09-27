@@ -245,7 +245,12 @@ char string_byte_at(string str, int index) {
   return str[n];
 }
 
-string string_char_at(string str,int index) {
+string string_char_at(string str, double index) {
+  // GM8 rounds the index and has no character before the first.
+  if (enigma::gm8_compliance()) {
+    index = enigma::round_half_even(index);
+    if (index < 1) return "";
+  }
   unsigned int n = index <= 1 ? 0 : (unsigned int)(index - 1);
   #ifdef DEBUG_MODE
     if (n > str.length())
