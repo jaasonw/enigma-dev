@@ -20,6 +20,7 @@
 // GM front-end functions - Implementations of standard GM collision functions.
 ////////////////////////////////////
 
+#include "Universal_System/gml_ops.h" // round_half_even: MinGW's nearbyint is slow x87 code
 #include <cmath>
 #include <limits>
 
@@ -40,10 +41,10 @@ static inline void get_border(int *leftv, int *rightv, int *topv, int *bottomv, 
         const bool xsp = (xscale >= 0), ysp = (yscale >= 0);
         const double lsc = left*xscale, rsc = (right+1)*xscale-1, tsc = top*yscale, bsc = (bottom+1)*yscale-1;
 
-        *leftv   = floor((xsp ? lsc : rsc) + .5) + nearbyint(x);
-        *rightv  = floor((xsp ? rsc : lsc) + .5) + nearbyint(x);
-        *topv    = floor((ysp ? tsc : bsc) + .5) + nearbyint(y);
-        *bottomv = floor((ysp ? bsc : tsc) + .5) + nearbyint(y);
+        *leftv   = floor((xsp ? lsc : rsc) + .5) + enigma::round_half_even(x);
+        *rightv  = floor((xsp ? rsc : lsc) + .5) + enigma::round_half_even(x);
+        *topv    = floor((ysp ? tsc : bsc) + .5) + enigma::round_half_even(y);
+        *bottomv = floor((ysp ? bsc : tsc) + .5) + enigma::round_half_even(y);
     }
     else
     {
@@ -55,10 +56,10 @@ static inline void get_border(int *leftv, int *rightv, int *topv, int *bottomv, 
                    q12 = (quad == 1 || quad == 2), q23 = (quad == 2 || quad == 3),
                    xs12 = xsp^q12, sx23 = xsp^q23, ys12 = ysp^q12, ys23 = ysp^q23;
 
-        *leftv   = floor(cosa*(xs12 ? lsc : rsc) + sina*(ys23 ? tsc : bsc) + .5) + nearbyint(x);
-        *rightv  = floor(cosa*(xs12 ? rsc : lsc) + sina*(ys23 ? bsc : tsc) + .5) + nearbyint(x);
-        *topv    = floor(cosa*(ys12 ? tsc : bsc) - sina*(sx23 ? rsc : lsc) + .5) + nearbyint(y);
-        *bottomv = floor(cosa*(ys12 ? bsc : tsc) - sina*(sx23 ? lsc : rsc) + .5) + nearbyint(y);
+        *leftv   = floor(cosa*(xs12 ? lsc : rsc) + sina*(ys23 ? tsc : bsc) + .5) + enigma::round_half_even(x);
+        *rightv  = floor(cosa*(xs12 ? rsc : lsc) + sina*(ys23 ? bsc : tsc) + .5) + enigma::round_half_even(x);
+        *topv    = floor(cosa*(ys12 ? tsc : bsc) - sina*(sx23 ? rsc : lsc) + .5) + enigma::round_half_even(y);
+        *bottomv = floor(cosa*(ys12 ? bsc : tsc) - sina*(sx23 ? lsc : rsc) + .5) + enigma::round_half_even(y);
     }
 }
 
@@ -105,72 +106,72 @@ namespace enigma_user
 
 bool position_free(cs_scalar x, cs_scalar y)
 {
-  return collide_inst_point(all,true,true,false,nearbyint(x),nearbyint(y)) == NULL;
+  return collide_inst_point(all,true,true,false,enigma::round_half_even(x),enigma::round_half_even(y)) == NULL;
 }
 
 bool position_empty(cs_scalar x, cs_scalar y)
 {
-  return collide_inst_point(all,false,true,false,nearbyint(x),nearbyint(y)) == NULL;
+  return collide_inst_point(all,false,true,false,enigma::round_half_even(x),enigma::round_half_even(y)) == NULL;
 }
 
 bool position_meeting(cs_scalar x, cs_scalar y, int object)
 {
-  return collide_inst_point(object,false,true,false,nearbyint(x),nearbyint(y));
+  return collide_inst_point(object,false,true,false,enigma::round_half_even(x),enigma::round_half_even(y));
 }
 
 void position_destroy_object(cs_scalar x, cs_scalar y, int object, bool solid_only)
 {
-    destroy_inst_point(object,solid_only,nearbyint(x),nearbyint(y));
+    destroy_inst_point(object,solid_only,enigma::round_half_even(x),enigma::round_half_even(y));
 }
 
 void position_destroy_solid(cs_scalar x, cs_scalar y)
 {
-    destroy_inst_point(all,true,nearbyint(x),nearbyint(y));
+    destroy_inst_point(all,true,enigma::round_half_even(x),enigma::round_half_even(y));
 }
 
 void position_destroy(cs_scalar x, cs_scalar y)
 {
-    destroy_inst_point(all,false,nearbyint(x),nearbyint(y));
+    destroy_inst_point(all,false,enigma::round_half_even(x),enigma::round_half_even(y));
 }
 
 void position_change(cs_scalar x, cs_scalar y, int obj, bool perf)
 {
-    change_inst_point(obj, perf, nearbyint(x), nearbyint(y));
+    change_inst_point(obj, perf, enigma::round_half_even(x), enigma::round_half_even(y));
 }
 
 enigma::instance_t instance_position(cs_scalar x, cs_scalar y, int object)
 {
-  const enigma::object_collisions* r = collide_inst_point(object,false,true,false,nearbyint(x),nearbyint(y));
+  const enigma::object_collisions* r = collide_inst_point(object,false,true,false,enigma::round_half_even(x),enigma::round_half_even(y));
   return r == NULL ? noone : static_cast<int>(r->id);
 }
 
 enigma::instance_t collision_rectangle(cs_scalar x1, cs_scalar y1, cs_scalar x2, cs_scalar y2, int obj, bool prec, bool notme)
 {
-  const enigma::object_collisions* r = collide_inst_rect(obj,false,prec,notme,nearbyint(x1),nearbyint(y1),nearbyint(x2),nearbyint(y2)); //false is for solid_only
+  const enigma::object_collisions* r = collide_inst_rect(obj,false,prec,notme,enigma::round_half_even(x1),enigma::round_half_even(y1),enigma::round_half_even(x2),enigma::round_half_even(y2)); //false is for solid_only
   return r == NULL ? noone : static_cast<int>(r->id);
 }
 
 enigma::instance_t collision_line(cs_scalar x1, cs_scalar y1, cs_scalar x2, cs_scalar y2, int obj, bool prec, bool notme)
 {
-  const enigma::object_collisions* r = collide_inst_line(obj,false,prec,notme,nearbyint(x1),nearbyint(y1),nearbyint(x2),nearbyint(y2));
+  const enigma::object_collisions* r = collide_inst_line(obj,false,prec,notme,enigma::round_half_even(x1),enigma::round_half_even(y1),enigma::round_half_even(x2),enigma::round_half_even(y2));
   return r == NULL ? noone : static_cast<int>(r->id);
 }
 
 enigma::instance_t collision_point(cs_scalar x, cs_scalar y, int obj, bool prec, bool notme)
 {
-  const enigma::object_collisions* r = collide_inst_point(obj,false, prec,notme,nearbyint(x),nearbyint(y));
+  const enigma::object_collisions* r = collide_inst_point(obj,false, prec,notme,enigma::round_half_even(x),enigma::round_half_even(y));
   return r == NULL ? noone : static_cast<int>(r->id);
 }
 
 enigma::instance_t collision_circle(cs_scalar x, cs_scalar y, double radius, int obj, bool prec, bool notme)
 {
-  const enigma::object_collisions* r = collide_inst_circle(obj,false,prec,notme,nearbyint(x),nearbyint(y),radius);
+  const enigma::object_collisions* r = collide_inst_circle(obj,false,prec,notme,enigma::round_half_even(x),enigma::round_half_even(y),radius);
   return r == NULL ? noone : static_cast<int>(r->id);
 }
 
 enigma::instance_t collision_ellipse(cs_scalar x1, cs_scalar y1, cs_scalar x2, cs_scalar y2, int obj, bool prec, bool notme)
 {
-  const enigma::object_collisions* r = collide_inst_ellipse(obj,false,prec,notme,nearbyint(((x1+x2)/2)),nearbyint(((y1+y2)/2)),fabs(x2-x1)/2,fabs(y2-y1)/2);
+  const enigma::object_collisions* r = collide_inst_ellipse(obj,false,prec,notme,enigma::round_half_even(((x1+x2)/2)),enigma::round_half_even(((y1+y2)/2)),fabs(x2-x1)/2,fabs(y2-y1)/2);
   return r == NULL ? noone : static_cast<int>(r->id);
 }
 
