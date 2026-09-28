@@ -58,6 +58,7 @@ namespace enigma
       gs_scalar image_index;
       gs_scalar image_speed;
       image_singlev image_single;
+      bool animation_wrapped = false;  // GM compliance: image_index passed the last subimage this step
 
       //Depth
       enigma::depthv  depth;
