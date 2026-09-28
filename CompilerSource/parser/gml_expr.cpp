@@ -362,14 +362,13 @@ struct Printer {
         const char *hook = assign_hook(l, gm8);
         return hook ? Out().add(hook).add(body).add(")") : body;
       }
-      case Op::kAnd: case Op::kOr:
-        if (!gm8) return Out().add(wrap(l)).add(n.op.kind == Op::kAnd ? "&&" : "||").add(wrap(r));
-        return Out().add(truth(l)).add(n.op.kind == Op::kAnd ? "&&" : "||").add(truth(r));
-      case Op::kXor:
-        return ordered(l, r, [&](Out lhs) {
-          Out o = Out().add("(").add(gm8 ? "enigma::gml_truth(" : "bool(").add(lhs).add(")!=");
-          return o.add(truth(r)).add(")");
-        });
+      case Op::kAnd: case Op::kOr: case Op::kXor:
+        // GM8 computes both operands, left first, even when the left one decides.
+        if (gm8)
+          return Out().add("enigma::gml_both{").add(truth(l)).add(",").add(truth(r))
+              .add(n.op.kind == Op::kAnd ? "}.all()" : n.op.kind == Op::kOr ? "}.any()" : "}.one()");
+        if (n.op.kind != Op::kXor) return Out().add(wrap(l)).add(n.op.kind == Op::kAnd ? "&&" : "||").add(wrap(r));
+        return ordered(l, r, [&](Out lhs) { return Out().add("(bool(").add(lhs).add(")!=").add(truth(r)).add(")"); });
       case Op::kBit: case Op::kShift: {
         const string c = op.code;
         const char *fn = c == "&" ? "enigma::gml_bitand(" : c == "|" ? "enigma::gml_bitor(" : c == "^" ? "enigma::gml_bitxor("

@@ -73,6 +73,15 @@ inline double gml_shr(double a, double b) {
 template<typename T> inline bool gml_truth(const T &x) { return (double) x >= 0.5; }
 inline bool gml_truth(bool x) { return x; }
 
+// GM8 computes both operands of && || ^^, left first, even when the left one
+// decides. A braced list evaluates in order.
+struct gml_both {
+  bool l, r;
+  bool all() const { return l && r; }
+  bool any() const { return l || r; }
+  bool one() const { return l != r; }
+};
+
 }  // namespace enigma
 
 #endif  // ENIGMA_GML_OPS_H
