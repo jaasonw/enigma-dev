@@ -28,6 +28,7 @@
 #include <stdio.h>
 
 #include "instance_system.h"
+#include "Universal_System/compliance.h"
 #include "instance_system_frontend.h"
 
 using namespace std;
@@ -159,6 +160,20 @@ namespace enigma
     if (prev) prev->next = a; // If we have a final item, set its next node to this item.
     else next = a; // Otherwise, set our first item to this item.
     return prev = a; // Either way, our last item is this item now.
+  }
+
+  // GM8 runs an event object by object (by object_index), each object's instances
+  // in creation order. ponytail: walks back from the tail past later objects'
+  // instances; keep a per-object tail if creation gets hot.
+  inst_iter *event_iter::add_inst_by_object(object_basic* ninst)
+  {
+    if (!gm8_compliance()) return add_inst(ninst);
+    inst_iter *after = prev;  // the last node, or this list itself when empty
+    while (after != this && after->inst->object_index > ninst->object_index) after = after->prev;
+    inst_iter *a = new inst_iter(ninst, after->next, after);
+    if (after->next) after->next->prev = a;
+    else prev = a;
+    return after->next = a;
   }
 
   void event_iter::unlink(inst_iter* which)
