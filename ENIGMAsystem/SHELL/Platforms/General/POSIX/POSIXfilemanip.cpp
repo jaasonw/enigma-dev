@@ -89,7 +89,7 @@ string file_find_next() {
 
     struct stat sb;
     const string fqfn = fff_path + r;
-    stat(fqfn.c_str(), &sb);
+    if (stat(fqfn.c_str(), &sb) != 0) continue;  // gone since readdir
 
     // POSIX has no system attribute; root ownership is not one.
     if (sb.st_mode & S_IFDIR and not_attrib & fa_directory) continue;
