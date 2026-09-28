@@ -8,7 +8,8 @@
  See the GNU General Public License for more details. 
 **/
 
-#define repeat(x) for (int ENIGMA_REPEAT_VAR = (x); ENIGMA_REPEAT_VAR > 0; ENIGMA_REPEAT_VAR--)
+// The count converts like an index: GM8 rounds it.
+#define repeat(x) for (int ENIGMA_REPEAT_VAR = enigma::gml_index(x); ENIGMA_REPEAT_VAR > 0; ENIGMA_REPEAT_VAR--)
 #define mod %(evariant)
 
 #include <cmath>
