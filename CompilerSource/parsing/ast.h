@@ -208,9 +208,6 @@ class AST {
     std::vector<PNode> arguments;
     /// As BinaryExpression::evaluate_in_order, for the arguments.
     bool evaluate_in_order = false;
-    /// variable_global_exists("name") for a declared globalvar: it exists
-    /// even unassigned (GM8). Set by the annotator.
-    bool names_declared_globalvar = false;
 
     BASIC_NODE_ROUTINES(FunctionCallExpression);
 

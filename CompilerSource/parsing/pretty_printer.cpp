@@ -665,7 +665,7 @@ bool AST::CppPrettyPrinter::VisitFunctionCallExpression(AST::FunctionCallExpress
       print("(enigma::varaccess_" + name + "(int(global)) = ");
       if (node.arguments.size() > 1) VISIT_AND_CHECK(node.arguments[1]);
       print(")");
-    } else if ((builtin && owner == "self") || node.names_declared_globalvar) {
+    } else if (builtin && owner == "self") {
       print("true");
     } else {
       print("!enigma_user::is_undefined(enigma::varaccess_" + name + "(int(" + owner + ")))");
@@ -985,15 +985,22 @@ bool AST::CppPrettyPrinter::VisitDeclarationStatement(AST::DeclarationStatement 
     // itself — so this fork doesn't go through VisitInitDeclarator.
     bool printed = false;
     for (auto &entry : node.clause->declarators) {
+      std::string name(entry->name.content);
       if (entry->init) {
         if (printed) print(", ");
-        std::string name(entry->name.content);
         if (is_global)
           print("enigma::varaccess_" + name + "(int(global))");
         else
           print(name);
         // The Initializer owns the separator (ASSIGN prints " = v").
         if (!VisitInitializer(*entry->init)) return false;
+        printed = true;
+      } else if (is_global) {
+        // GM8 globalvar creates the global as 0 when it runs, so
+        // variable_global_exists turns true here, not before.
+        if (printed) print(", ");
+        const std::string ref = "enigma::varaccess_" + name + "(int(global))";
+        print("(enigma_user::is_undefined(" + ref + ") ? (void)(" + ref + " = 0) : (void)0)");
         printed = true;
       }
     }
