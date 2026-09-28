@@ -34,9 +34,6 @@ namespace syncheck
 {
   extern std::string syerr;
   int syntaxcheck(std::string code, std::string& newcode);
-  // Names declared with globalvar anywhere in the game: they exist even unassigned (GM8).
-  void declare_globalvars(const std::string &code);
-  void clear_globalvars();
   void addscr(std::string name);
 }
 
