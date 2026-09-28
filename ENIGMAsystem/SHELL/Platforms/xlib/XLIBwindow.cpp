@@ -30,6 +30,8 @@
 #include "XLIBwindow.h"  // Type insurance for non-mandatory functions
 #include "XLIBicon.h"
 
+#include <X11/Xatom.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <stdio.h>   //printf, NULL
@@ -114,6 +116,9 @@ bool initGameWindow()
   // Make the window
   win = XCreateWindow(disp, root, 0, 0, winw, winh, 0, vi->depth, InputOutput, vi->visual, valmask, &swa);
   set_net_wm_pid(win);
+  if (game_icon_size)
+    XChangeProperty(disp, win, XInternAtom(disp, "_NET_WM_ICON", False), XA_CARDINAL, 32, PropModeReplace,
+                    reinterpret_cast<const unsigned char *>(game_icon), game_icon_size);
   XMoveWindow(disp, win, (screen->width - winw) / 2, (screen->height - winh) / 2);
 
   //register CloseButton listener
