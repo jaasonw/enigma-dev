@@ -60,20 +60,6 @@ int lang_CPP::compile_parseAndLink(const GameData &game, CompileState &state) {
   for (const auto &script : game.scripts)
     script_names.insert(script.name);
 
-  syncheck::clear_globalvars();
-  for (const auto &script : game.scripts) syncheck::declare_globalvars(script->code());
-  for (const auto &timeline : game.timelines)
-    for (const auto &moment : timeline->moments()) syncheck::declare_globalvars(moment.code());
-  for (const auto &object : game.objects)
-    for (const auto &event : object->egm_events()) syncheck::declare_globalvars(event.code());
-  for (const auto &room : game.rooms) {
-    syncheck::declare_globalvars(room->creation_code());
-    for (const auto &instance : room->instances()) {
-      syncheck::declare_globalvars(instance.creation_code());
-      syncheck::declare_globalvars(instance.initialization_code());
-    }
-  }
-
   // First we just parse the scripts to add semicolons and collect variable names
   scripts.resize(game.scripts.size());
   for (size_t i = 0; i < game.scripts.size(); i++) {

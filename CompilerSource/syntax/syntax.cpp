@@ -211,20 +211,30 @@ namespace syncheck
   #define superPos (mymacroind ? mymacrostack[0].pos : pos)
   #define ptrace() for (unsigned i = 0; i < lex.size(); i++) cout << (string)lex[i] << "\t\t" << endl
   #define lexlast (lex.size()-1)
-  // variable_*_exists with a literal name reads the variable through the
-  // dot-access path, which declares it; unset reads as undefined.
-  static std::set<string> declared_globalvars;
-  void clear_globalvars() { declared_globalvars.clear(); }
-  void declare_globalvars(const string &code) {
-    static const std::regex decl(R"(\bglobalvar\s+([A-Za-z_]\w*(\s*,\s*[A-Za-z_]\w*)*))");
+  // GM8 globalvar creates each global as 0 when it runs, so
+  // variable_global_exists turns true there, not before.
+  static string lower_globalvar(const string &code) {
+    if (code.find("globalvar") == string::npos) return code;
+    static const std::regex decl(R"(\bglobalvar\s+([A-Za-z_]\w*(\s*,\s*[A-Za-z_]\w*)*)\s*;?)");
     static const std::regex ident(R"([A-Za-z_]\w*)");
+    string out;
+    auto last = code.cbegin();
     for (std::sregex_iterator it(code.begin(), code.end(), decl), end; it != end; ++it) {
-      const string names = (*it)[1].str();
+      const auto &m = *it;
+      out.append(last, m[0].first);
+      out += "{globalvar " + m[1].str() + ";";  // braced: one statement after a braceless if
+      const string names = m[1].str();
       for (std::sregex_iterator n(names.begin(), names.end(), ident); n != end; ++n)
-        declared_globalvars.insert(n->str());
+        out += "if (is_undefined(global." + n->str() + ")) global." + n->str() + " = 0;";
+      out += '}';
+      last = m[0].second;
     }
+    out.append(last, code.cend());
+    return out;
   }
 
+  // variable_*_exists with a literal name reads the variable through the
+  // dot-access path, which declares it; unset reads as undefined.
   static string lower_variable_global_set(const string &code);
   static string lower_variable_exists(const string &code) {
     if (code.find("variable_") == string::npos) return code;
@@ -235,8 +245,7 @@ namespace syncheck
     for (std::sregex_iterator it(code.begin(), code.end(), call), end; it != end; ++it) {
       const auto &m = *it;
       out.append(last, m[0].first);
-      if (m[1] == "global" && declared_globalvars.count(m[3].str())) out += "(true)";
-      else out += "(!is_undefined(" + string(m[1] == "local" ? "self" : "global") + "." + m[3].str() + "))";
+      out += "(!is_undefined(" + string(m[1] == "local" ? "self" : "global") + "." + m[3].str() + "))";
       last = m[0].second;
     }
     out.append(last, code.cend());
@@ -414,7 +423,7 @@ namespace syncheck
 
   int syntaxcheck(string code, string& newcode)
   {
-    code = gml_compat_prepass(lower_variable_exists(code));
+    code = gml_compat_prepass(lower_variable_exists(lower_globalvar(code)));
     syerr = "No error";
     if (code.empty()) {
       newcode = code;
