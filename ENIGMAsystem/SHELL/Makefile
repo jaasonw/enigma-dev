@@ -177,6 +177,11 @@ else
 	endif
 endif
 
+ifeq ($(GMODE), Compile)
+	override CXXFLAGS += -O2
+	override CFLAGS += -O2
+endif
+
 ifeq ($(PLATFORM), Win32)
 	ifeq ($(GMODE), Compile)
 		override LDFLAGS += -static-libgcc -Wl,-subsystem,windows
