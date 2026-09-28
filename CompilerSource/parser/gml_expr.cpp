@@ -313,6 +313,13 @@ struct Printer {
     }
   }
 
+  // (enigma::varargs(), a, b): the overloaded comma returns a reference to
+  // the temporary pack, so auto&& would dangle; bind it by value.
+  static bool varargs_pack(const Node &n) {
+    return n.kind == Node::kParen && n.kids.size() > 1 && n.kids[0]->kind == Node::kCall &&
+           n.kids[0]->kids[0]->kind == Node::kLeaf && leaf_code(*n.kids[0]->kids[0]) == "enigma::varargs";
+  }
+
   static bool order_matters(const Node &a, const Node &b) {
     return (fx(a) && (fx(b) || read(b))) || (read(a) && fx(b));
   }
@@ -419,7 +426,7 @@ struct Printer {
     Out args;
     for (size_t a = 1; a < n.kids.size(); a++) {
       const string v = "enigma_arg" + std::to_string(a - 1);
-      const bool copy = read(*n.kids[a]);
+      const bool copy = read(*n.kids[a]) || varargs_pack(*n.kids[a]);
       o.add(copy ? "auto " : "auto&& ").add(v + "=").add(print(*n.kids[a])).add(";");
       if (a > 1) args.add(",");
       args.add(arg(Out().add(copy ? v : "std::forward<decltype(" + v + ")>(" + v + ")")));
