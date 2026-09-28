@@ -550,9 +550,9 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
       TT_PLUS, TT_EQUALS, TT_EQUALTO, TT_NOTEQUAL, TT_LESS, TT_GREATER, TT_LESSEQUAL, TT_GREATEREQUAL};
   const bool string_pair = kStringPairOps.count(node.operation.type) &&
                            is_string_literal(node.left) && is_string_literal(node.right);
-  // GM8: && and || take their operands' truth (>= 0.5).
-  const bool truth_operands =
-      (node.operation.type == TT_AND || node.operation.type == TT_OR) && Gm8Compliance();
+  // GM8: && || ^^ take their operands' truth (>= 0.5).
+  const bool truth_operands = (node.operation.type == TT_AND || node.operation.type == TT_OR ||
+                               node.operation.type == TT_XOR) && Gm8Compliance();
   auto print_operand = [&](PNode &operand, bool right) {
     if (string_pair && !right) {
       print("std::string{");
@@ -591,11 +591,20 @@ bool AST::CppPrettyPrinter::VisitBinaryExpression(AST::BinaryExpression &node) {
     if (ordered) print("; }()");
     return true;
   }
-  if (node.operation.type == TT_XOR) {  // C++ has no logical xor
-    const char *truth = Gm8Compliance() ? "enigma::gml_truth(" : "bool(";
-    print(std::string("(") + truth);
+  // GM8 computes both operands, left first, even when the left decides.
+  if (truth_operands) {
+    print("enigma::gml_both{");
     if (!visit_operand(node.left, false)) return false;
-    print(std::string(") != ") + truth);
+    print(", ");
+    if (!visit_operand(node.right, true)) return false;
+    print(node.operation.type == TT_AND ? "}.all()" : node.operation.type == TT_OR ? "}.any()" : "}.one()");
+    if (ordered) print("; }()");
+    return true;
+  }
+  if (node.operation.type == TT_XOR) {  // C++ has no logical xor
+    print("(bool(");
+    if (!visit_operand(node.left, false)) return false;
+    print(") != bool(");
     VISIT_AND_CHECK(node.right);
     print("))");
     if (ordered) print("; }()");
