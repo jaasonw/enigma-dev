@@ -320,8 +320,8 @@ enigma::object_collisions* const collide_inst_inst(int object, bool solid_only, 
             enigma::Sprite& sprite2 = enigma::sprites.get(collsprite_index2);
             if (!sprite1.SubimageCount() || !sprite2.SubimageCount()) continue;
 
-            const int usi1 = ((int) inst1->image_index) % sprite1.SubimageCount();
-            const int usi2 = ((int) inst2->image_index) % sprite2.SubimageCount();
+            const int usi1 = sprite1.SubimageOf(inst1->image_index);
+            const int usi2 = sprite2.SubimageOf(inst2->image_index);
 
             unsigned char* pixels1 = (unsigned char*) (sprite1.GetSubimage(usi1).collisionData);
             unsigned char* pixels2 = (unsigned char*) (sprite2.GetSubimage(usi2).collisionData);
@@ -434,7 +434,7 @@ enigma::object_collisions* const collide_inst_rect(int object, bool solid_only, 
             enigma::Sprite& sprite = enigma::sprites.get(collsprite_index);
             if (!sprite.SubimageCount()) continue;
 
-            const int usi = ((int) inst->image_index) % sprite.SubimageCount();
+            const int usi = sprite.SubimageOf(inst->image_index);
 
             unsigned char* pixels = (unsigned char*) (sprite.GetSubimage(usi).collisionData);
 
@@ -541,7 +541,7 @@ enigma::object_collisions* const collide_inst_line(int object, bool solid_only, 
                 enigma::Sprite& sprite = enigma::sprites.get(collsprite_index);
                 if (!sprite.SubimageCount()) continue;
 
-                const int usi = ((int) inst->image_index) % sprite.SubimageCount();
+                const int usi = sprite.SubimageOf(inst->image_index);
 
                 unsigned char* pixels = (unsigned char*) (sprite.GetSubimage(usi).collisionData);
 
@@ -616,7 +616,7 @@ enigma::object_collisions* const collide_inst_point(int object, bool solid_only,
             enigma::Sprite& sprite = enigma::sprites.get(collsprite_index);
             if (!sprite.SubimageCount()) continue;
 
-            const int usi = ((int) inst->image_index) % sprite.SubimageCount();
+            const int usi = sprite.SubimageOf(inst->image_index);
 
             unsigned char* pixels = (unsigned char*) (sprite.GetSubimage(usi).collisionData);
 
@@ -715,7 +715,7 @@ enigma::object_collisions* const collide_inst_ellipse(int object, bool solid_onl
             enigma::Sprite& sprite = enigma::sprites.get(collsprite_index);
             if (!sprite.SubimageCount()) continue;
 
-            const int usi = ((int) inst->image_index) % sprite.SubimageCount();
+            const int usi = sprite.SubimageOf(inst->image_index);
 
             unsigned char* pixels = (unsigned char*) (sprite.GetSubimage(usi).collisionData);
 
@@ -781,7 +781,7 @@ void destroy_inst_point(int object, bool solid_only, int x1, int y1)
             enigma::Sprite& sprite = enigma::sprites.get(collsprite_index);
             if (!sprite.SubimageCount()) continue;
 
-            const int usi = ((int) inst->image_index) % sprite.SubimageCount();
+            const int usi = sprite.SubimageOf(inst->image_index);
 
             unsigned char* pixels = (unsigned char*) (sprite.GetSubimage(usi).collisionData);
 
@@ -843,7 +843,7 @@ void change_inst_point(int obj, bool perf, int x1, int y1)
             enigma::Sprite& sprite = enigma::sprites.get(collsprite_index);
             if (!sprite.SubimageCount()) continue;
 
-            const int usi = ((int) inst->image_index) % sprite.SubimageCount();
+            const int usi = sprite.SubimageOf(inst->image_index);
 
             unsigned char* pixels = (unsigned char*) (sprite.GetSubimage(usi).collisionData);
 
