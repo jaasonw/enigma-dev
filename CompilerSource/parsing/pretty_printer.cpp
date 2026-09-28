@@ -1201,9 +1201,10 @@ bool AST::CppPrettyPrinter::VisitWhileLoop(AST::WhileLoop &node) {
     std::string counter = "strange_name";
     if (repeat_depth_ > 0) counter += std::to_string(repeat_depth_);
     ++repeat_depth_;
-    print("{ int " + counter + " = ");
+    // The count converts like an index (GM8 rounds it); a negative one runs 0 times.
+    print("{ int " + counter + " = enigma::gml_index(");
     VISIT_AND_CHECK(node.condition);
-    print("; while(" + counter + "--) ");
+    print("); while(" + counter + "-- > 0) ");
     VISIT_AND_CHECK(node.body);
     PrintSemiColon(node.body);
     print(" }");
