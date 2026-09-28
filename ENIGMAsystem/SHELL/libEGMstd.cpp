@@ -50,7 +50,8 @@ string toString(unsigned long long n) { return string(buf,sprintf(buf,"%llu", n)
 #endif
 string toString(char n)               { return string(buf,sprintf(buf,"%d", n)); }
 string toString(char* n)              { return string(n); }
-string toString(float n)              { return string(buf,sprintf(buf,"%g", n)); }
+// float (gs_scalar on some builds: image_index, x) and long double print like double.
+string toString(float n)              { return toString(double(n)); }
 // GML string() prints whole numbers bare and anything else with two decimals, in GM8
 // and GMS alike. Sized per call: a large whole number runs to hundreds of digits.
 string toString(double n) {
@@ -61,7 +62,7 @@ string toString(double n) {
   snprintf(&s[0], len + 1, fmt, n);
   return s;
 }
-string toString(long double n)        { return std::to_string(n); }
+string toString(long double n)        { return toString(double(n)); }
 string toString(const void *n)        { return string(buf,sprintf(buf,"%p",  n)); }
 
 string toString()                                        { return string ();     }
