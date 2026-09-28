@@ -65,7 +65,10 @@ TEST(GmlExpr, ConditionsUseGm8Truth) {
 
 TEST(GmlExpr, LogicalOperators) {
   EXPECT_EQ(Gm8("x=!a;"), "x=!enigma::gml_truth(a);");
-  EXPECT_EQ(Gm8("x=a and b;"), "x=enigma::gml_truth(a)&&enigma::gml_truth(b);");
+  // GM8 computes both operands, left first.
+  EXPECT_EQ(Gm8("x=a and b;"), "x=enigma::gml_both{enigma::gml_truth(a),enigma::gml_truth(b)}.all();");
+  EXPECT_EQ(Gm8("x=a||b;"), "x=enigma::gml_both{enigma::gml_truth(a),enigma::gml_truth(b)}.any();");
+  EXPECT_EQ(Gm8("x=a log_xor b;"), "x=enigma::gml_both{enigma::gml_truth(a),enigma::gml_truth(b)}.one();");
   // && || ^^ share one level, left to right.
   EXPECT_EQ(Std("x=1||0&&0;"), "x=(1||0)&&0;");
   EXPECT_EQ(Std("x=1 log_xor 1&&0;"), "x=((bool(1)!=bool(1)))&&0;");
