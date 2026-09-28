@@ -575,7 +575,7 @@ static inline void write_object_constructors(std::ostream &wto, parsed_object *o
         wto << "      " << event.IteratorInitializeCode() << ";\n";
     } else {
       wto << "      ENOBJ_ITER_myevent_" << evname
-          << " = enigma::event_" << evname << "->add_inst(this);\n";
+          << " = enigma::event_" << evname << "->add_inst_by_object(this);\n";
     }
   }
   wto << "    }\n";
