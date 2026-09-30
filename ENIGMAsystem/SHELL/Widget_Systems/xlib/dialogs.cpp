@@ -21,6 +21,7 @@
 #include <climits>
 
 #include <string>
+#include <atomic>
 #include <thread>
 #include <chrono>
 #include <vector>
@@ -248,13 +249,23 @@ static pid_t PidFromPpidRecursive(pid_t parentProcId) {
   return parentProcId;
 }
 
+struct shell_dialog {
+  pid_t pid;
+  std::atomic<bool> done{false};
+};
+
 // set dialog transient; set title caption.
-static void *modify_shell_dialog(void *pid) {
+static void *modify_shell_dialog(void *arg) {
+  shell_dialog *dialog = (shell_dialog *)arg;
   SetErrorHandlers();
   Display *display = XOpenDisplay(nullptr); Window wid;
-  pid_t child = PidFromPpidRecursive((pid_t)(std::intptr_t)pid);
+  pid_t child = PidFromPpidRecursive(dialog->pid);
   while (true) {
     std::this_thread::sleep_for(std::chrono::milliseconds(5));
+    if (dialog->done) {  // answered before its window showed up
+      XCloseDisplay(display);
+      return nullptr;
+    }
     wid = WidFromTop(display);
     if (PidFromWid(display, wid) == child) {
       break;
@@ -272,6 +283,10 @@ static void *modify_shell_dialog(void *pid) {
 
 bool widget_system_initialize() {
   setenv("WAYLAND_DISPLAY", "", 1); // force xwayland fallback prevents bug.
+  // Toolkits pinned to Wayland (KDE sets GDK_BACKEND=wayland) find no display
+  // without WAYLAND_DISPLAY: the dialog exits at once and reads as "no".
+  setenv("GDK_BACKEND", "x11", 1);
+  setenv("QT_QPA_PLATFORM", "xcb", 1);
   // Defaults to the GUI toolkit (GTK+/Qt) that matches Desktop Environment.
   current_widget_engine = kwin_running() ? kdialog_widgets : zenity_widgets;
   return true;
@@ -280,15 +295,20 @@ bool widget_system_initialize() {
 string create_shell_dialog(string command) {
   string output; char buffer[BUFSIZ];
   int outfp = 0, infp = 0; ssize_t nRead = 0;
-  pid_t pid = ProcessCreate(command.c_str(), &infp, &outfp);
+  shell_dialog dialog;
+  dialog.pid = ProcessCreate(command.c_str(), &infp, &outfp);
   std::this_thread::sleep_for(std::chrono::milliseconds(100)); pthread_t thread;
-  pthread_create(&thread, nullptr, modify_shell_dialog, (void *)(std::intptr_t)pid);
+  pthread_create(&thread, nullptr, modify_shell_dialog, &dialog);
   while ((nRead = read(outfp, buffer, BUFSIZ)) > 0) {
     buffer[nRead] = '\0';
     output.append(buffer, nRead);
   }
-  pthread_cancel(thread);
-  while (output.back() == '\r' || output.back() == '\n')
+  // Stop and join, never cancel: a thread cancelled inside Xlib (e.g. in
+  // XCloseDisplay's GLX close hook) leaves a lock held, and the game's next
+  // GLX call waits on it forever.
+  dialog.done = true;
+  pthread_join(thread, nullptr);
+  while (!output.empty() && (output.back() == '\r' || output.back() == '\n'))
     output.pop_back();
   return output;
 }
