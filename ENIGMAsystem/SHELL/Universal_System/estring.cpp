@@ -249,16 +249,14 @@ char string_byte_at(string str, int index) {
 }
 
 string string_char_at(string str, double index) {
-  // GM8 rounds the index and has no character before the first.
-  if (enigma::gm8_compliance()) {
-    index = enigma::round_half_even(index);
-    if (index < 1) return "";
-  }
+  // GM8 rounds the index; anything below 1 reads the first character.
+  if (enigma::gm8_compliance()) index = enigma::round_half_even(index);
   unsigned int n = index <= 1 ? 0 : (unsigned int)(index - 1);
   #ifdef DEBUG_MODE
     if (n > str.length())
       DEBUG_MESSAGE("Index " + toString(index) + " is outside range " + toString(str.length()) + " in the following string:\n\"" + str + "\".", MESSAGE_TYPE::M_ERROR);
   #endif
+  if (n >= str.length()) return "";
   return string(1, str[n]);
 }
 
