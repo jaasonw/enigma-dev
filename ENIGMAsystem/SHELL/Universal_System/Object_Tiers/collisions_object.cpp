@@ -21,6 +21,7 @@
  */
 
 #include "collisions_object.h"
+#include "Universal_System/gml_ops.h"
 #include "Universal_System/math_consts.h"
 #include "Universal_System/Resources/sprites.h"
 #include "Universal_System/Resources/sprites_internal.h"
@@ -39,8 +40,8 @@ namespace enigma
     {
         if (fzero(image_angle))
             return (image_xscale >= 0) ?
-                   ((mask_index >= 0 ? sprite_get_bbox_left_relative(mask_index)*image_xscale : (sprite_index >= 0 ? sprite_get_bbox_left_relative(sprite_index)*image_xscale : 0)) + x + .5) :
-                   ((mask_index >= 0 ? (sprite_get_bbox_right_relative(mask_index) + 1)*image_xscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_right_relative(sprite_index) + 1)*image_xscale - 1: 0)) + x + .5);
+                   enigma::round_half_even((mask_index >= 0 ? sprite_get_bbox_left_relative(mask_index)*image_xscale : (sprite_index >= 0 ? sprite_get_bbox_left_relative(sprite_index)*image_xscale : 0)) + x) :
+                   enigma::round_half_even((mask_index >= 0 ? (sprite_get_bbox_right_relative(mask_index) + 1)*image_xscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_right_relative(sprite_index) + 1)*image_xscale - 1: 0)) + x);
 
         const double arad = image_angle*(M_PI/180.0);
         const int quad = int(fmod(fmod(image_angle, 360) + 360, 360)/90.0);
@@ -52,15 +53,15 @@ namespace enigma
             (mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0)) :
             (mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0));
 
-        return cos(arad)*w + sin(arad)*h + x + .5;
+        return enigma::round_half_even(cos(arad)*w + sin(arad)*h + x);
     }
 
     int object_collisions::$bbox_right() const
     {
         if (fzero(image_angle))
             return (image_xscale >= 0) ?
-                   ((mask_index >= 0 ? (sprite_get_bbox_right_relative(mask_index) + 1)*image_xscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_right_relative(sprite_index) + 1)*image_xscale - 1: 0)) + x + .5) :
-                   ((mask_index >= 0 ? sprite_get_bbox_left_relative(mask_index)*image_xscale : (sprite_index >= 0 ? sprite_get_bbox_left_relative(sprite_index)*image_xscale : 0)) + x + .5);
+                   enigma::round_half_even((mask_index >= 0 ? (sprite_get_bbox_right_relative(mask_index) + 1)*image_xscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_right_relative(sprite_index) + 1)*image_xscale - 1: 0)) + x) :
+                   enigma::round_half_even((mask_index >= 0 ? sprite_get_bbox_left_relative(mask_index)*image_xscale : (sprite_index >= 0 ? sprite_get_bbox_left_relative(sprite_index)*image_xscale : 0)) + x);
 
         const double arad = image_angle*(M_PI/180.0);
         const int quad = int(fmod(fmod(image_angle, 360) + 360, 360)/90.0);
@@ -72,15 +73,15 @@ namespace enigma
             (mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0)) :
             (mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0));
 
-        return cos(arad)*w + sin(arad)*h + x + .5;
+        return enigma::round_half_even(cos(arad)*w + sin(arad)*h + x);
     }
 
     int object_collisions::$bbox_top() const
     {
         if (fzero(image_angle))
             return (image_yscale >= 0) ?
-                ((mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0)) + y + .5):
-                ((mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0)) + y + .5);
+                enigma::round_half_even((mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0)) + y):
+                enigma::round_half_even((mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0)) + y);
 
         const double arad = image_angle*(M_PI/180.0);
         const int quad = int(fmod(fmod(image_angle, 360) + 360, 360)/90.0);
@@ -92,15 +93,15 @@ namespace enigma
             (mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0)) :
             (mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0));
 
-        return cos(arad)*h -sin(arad)*w + y + .5;
+        return enigma::round_half_even(cos(arad)*h -sin(arad)*w + y);
     }
 
     int object_collisions::$bbox_bottom() const
     {
         if (fzero(image_angle))
             return (image_yscale >= 0) ?
-                ((mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0)) + y + .5) :
-                ((mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0)) + y + .5);
+                enigma::round_half_even((mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0)) + y) :
+                enigma::round_half_even((mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0)) + y);
 
         const double arad = image_angle*(M_PI/180.0);
         const int quad = int(fmod(fmod(image_angle, 360) + 360, 360)/90.0);
@@ -112,7 +113,7 @@ namespace enigma
             (mask_index >= 0 ? (sprite_get_bbox_bottom_relative(mask_index) + 1)*image_yscale - 1 : (sprite_index >= 0 ? (sprite_get_bbox_bottom_relative(sprite_index) + 1)*image_yscale - 1: 0)) :
             (mask_index >= 0 ? sprite_get_bbox_top_relative(mask_index)*image_yscale : (sprite_index >= 0 ? sprite_get_bbox_top_relative(sprite_index)*image_yscale : 0));
 
-        return cos(arad)*h - sin(arad)*w + y + .5;
+        return enigma::round_half_even(cos(arad)*h - sin(arad)*w + y);
     }
 
     const BoundingBox object_collisions::$bbox_relative() const
