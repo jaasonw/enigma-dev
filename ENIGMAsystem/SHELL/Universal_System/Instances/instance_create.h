@@ -67,7 +67,7 @@ namespace enigma
       if (perf) newinst->myevent_create();
   }
 
-  object_basic* instance_create_id(int x,int y,int object,int idn)
+  object_basic* instance_create_id(double x, double y,int object,int idn)
   { //This is for use by the system only. Please leave be.
     if (maxid < idn)
       maxid = idn;
@@ -88,7 +88,7 @@ namespace enigma
 
 namespace enigma_user
 {
-  enigma::instance_t instance_create(int x,int y,int object)
+  enigma::instance_t instance_create(double x, double y,int object)
   {
       int idn = enigma::maxid++;
     enigma::object_basic* ob;
